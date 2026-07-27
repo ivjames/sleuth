@@ -20,12 +20,12 @@ function corroborators(G, name) {
 }
 
 const NAME_SETS = [
-  ['A', 'B', 'C', 'D', 'E'],                       // 5 guests -> 1 victim + 4? padded to 6 -> 5 suspects
-  ['A', 'B', 'C', 'D', 'E', 'F'],                  // 6
-  ['A', 'B', 'C', 'D', 'E', 'F', 'G'],             // 7
-  ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],   // 9 -> victim + 8 suspects (cap)
-  ['Solo'],                                        // 1 -> padded
-  ['A', 'A', 'B'],                                 // dupes -> deduped & padded
+  // Every set becomes exactly 8 guests -> 1 victim + 7 suspects.
+  ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],        // exactly 8
+  ['A', 'B', 'C', 'D', 'E'],                       // 5 -> padded to 8
+  ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'], // 10 -> trimmed to 8
+  ['Solo'],                                        // 1 -> padded to 8
+  ['A', 'A', 'B'],                                 // dupes -> deduped & padded to 8
 ];
 
 let runs = 0, fails = 0;
@@ -54,6 +54,9 @@ for (const set of NAME_SETS) {
     if (!G.victim) { fails++; console.error('FAIL: no victim'); continue; }
     if (G.suspects.includes(G.victim)) { fails++; console.error('FAIL: victim is also a suspect', G.victim); continue; }
     if (G.victim === G.murdererName) { fails++; console.error('FAIL: victim is the murderer'); continue; }
+
+    // 4c) eight guests total -> exactly seven suspects
+    if (G.suspects.length !== 7) { fails++; console.error('FAIL: expected 7 suspects, got', G.suspects.length, 'set', set); continue; }
 
     // 5) the weapon is discoverable (a weapon object exists, or it is at the scene)
     const hasWeaponObj = Object.values(G.objects).some(o => o.kind === 'weapon') || G.weaponAtScene;

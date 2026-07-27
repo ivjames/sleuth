@@ -104,18 +104,19 @@ let G = null; // current game
 function newGame(names, diffKey) {
   const diff = DIFF[diffKey] || DIFF.normal;
 
-  // The party guest list — deduped, padded from defaults if too few. As in the
-  // original, ONE guest is chosen (at random) as the deceased; everyone left is
-  // a suspect, one of whom is the murderer. In customized play that means one of
-  // the names you entered — perhaps your own — turns up dead.
+  // The party is EIGHT guests, as in the original — deduped, padded from the
+  // defaults if you named fewer, trimmed if you named more. One of the eight is
+  // chosen (at random) as the deceased; the remaining seven are the suspects,
+  // one of whom is the murderer. In customized play that means one of the names
+  // you entered — perhaps your own — turns up dead.
   let guests = [];
   for (const s of names.map(x => x.trim()).filter(Boolean)) if (!guests.includes(s)) guests.push(s);
   const fillers = ['Lord Ashford','Lady Vaughn','Dr. Crane','Miss Ivory','Captain Reed','Mr. Bishop','Mrs. Pearl','Sir Blake'];
-  for (const f of fillers) { if (guests.length >= 6) break; if (!guests.includes(f)) guests.push(f); }
-  guests = guests.slice(0, 9);                       // victim + up to 8 suspects
+  for (const f of fillers) { if (guests.length >= 8) break; if (!guests.includes(f)) guests.push(f); }
+  guests = guests.slice(0, 8);                       // exactly eight guests
 
-  const victim   = pick(guests);                     // one of the guests is the deceased
-  let suspects   = guests.filter(n => n !== victim); // the rest are the suspects
+  const victim   = pick(guests);                     // one of the eight is the deceased
+  let suspects   = guests.filter(n => n !== victim); // the remaining seven are suspects
 
   const murderRoom = rnd(ROOMS.length);
   const weapon     = pick(WEAPONS);
