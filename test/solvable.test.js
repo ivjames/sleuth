@@ -105,6 +105,15 @@ for (const set of NAME_SETS) {
       if (tileFail) break;
     }
     if (tileFail) { fails++; console.error('FAIL: floorplan has an unreachable room (bad doorway)'); continue; }
+
+    // 8) the secret passage has two distinct, valid endpoints, is hidden at the
+    //    start (no ADJ 'P' link yet), and — in a two-story house — links the two
+    //    floors.
+    const P = G.passage;
+    if (!P || P.panelRoom == null || P.exitRoom == null) { fails++; console.error('FAIL: no secret passage'); continue; }
+    if (P.panelRoom === P.exitRoom) { fails++; console.error('FAIL: passage endpoints identical'); continue; }
+    if (P.found || ADJ[P.panelRoom].P != null || ADJ[P.exitRoom].P != null) { fails++; console.error('FAIL: passage not hidden at start'); continue; }
+    if (G.stories === 2 && META[P.panelRoom].floor === META[P.exitRoom].floor) { fails++; console.error('FAIL: two-story passage stays on one floor'); continue; }
   }
 }
 

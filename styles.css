@@ -166,6 +166,8 @@ html, body {
 .floormap .g-guest { color: var(--cyan); }
 .floormap .g-stair { color: #8ae234; }
 .floormap .g-here  { color: #4a3a10; }               /* faint dots mark the room you're standing in */
+.floormap .g-pass  { color: #ff5fff; font-weight: bold; }   /* an opened secret passage */
+.g-pass { color: #ff5fff; }
 
 /* ---- Room detail ---- */
 #room-desc { color: var(--amber); margin-bottom: 6px; }

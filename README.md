@@ -58,6 +58,16 @@ happen on either floor, and the guests roam between floors too. The solvability
 test checks both that every room is reachable through the room graph and that
 the tile floorplan itself is walkable (doorways actually connect the rooms).
 
+### The secret passage
+
+Every house hides a **secret passage**. Somewhere the wallpaper's pattern
+"doesn't quite line up in one corner" — **`SEARCH`** that room and, after a
+little probing, a panel slides aside to reveal a hidden route to a far part of
+the house (in a two-story mansion, it links the two floors). Once open it's
+marked `=` at both ends; step into it or use **`PASSAGE`** to slip through — a
+shortcut only *you* know about (the guests never use it). Mind the black
+obelisk in the dark.
+
 ## How to play
 
 - **Move**: **arrow keys** walk your dot (`@`) through rooms and doorways
