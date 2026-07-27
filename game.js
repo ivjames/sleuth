@@ -42,11 +42,6 @@ const WEAPONS = [
   { name: 'Letter Opener',scene: 'a small, neat pool of blood',                              klass: 'a slim blade' },
 ];
 
-const VICTIMS = [
-  'Sir Reginald Ravenswood', 'the host, Mr. Blackwood', 'old Mr. Pennington',
-  'the heiress, Ms. Thorne', 'Judge Harlan Voss', 'Baron von Hessler',
-];
-
 const DECOYS = [
   'a torn photograph',      'muddy footprints on the rug', 'an overturned chair',
   'a half-empty wine glass','a smouldering cigar',         'a cryptic note',
@@ -109,16 +104,21 @@ let G = null; // current game
 function newGame(names, diffKey) {
   const diff = DIFF[diffKey] || DIFF.normal;
 
-  // suspects: 5..8, deduped, padded from defaults if the player gave too few
-  let suspects = [];
-  for (const s of names.map(x => x.trim()).filter(Boolean)) if (!suspects.includes(s)) suspects.push(s);
+  // The party guest list — deduped, padded from defaults if too few. As in the
+  // original, ONE guest is chosen (at random) as the deceased; everyone left is
+  // a suspect, one of whom is the murderer. In customized play that means one of
+  // the names you entered — perhaps your own — turns up dead.
+  let guests = [];
+  for (const s of names.map(x => x.trim()).filter(Boolean)) if (!guests.includes(s)) guests.push(s);
   const fillers = ['Lord Ashford','Lady Vaughn','Dr. Crane','Miss Ivory','Captain Reed','Mr. Bishop','Mrs. Pearl','Sir Blake'];
-  for (const f of fillers) { if (suspects.length >= 5) break; if (!suspects.includes(f)) suspects.push(f); }
-  suspects = suspects.slice(0, 8);
+  for (const f of fillers) { if (guests.length >= 6) break; if (!guests.includes(f)) guests.push(f); }
+  guests = guests.slice(0, 9);                       // victim + up to 8 suspects
+
+  const victim   = pick(guests);                     // one of the guests is the deceased
+  let suspects   = guests.filter(n => n !== victim); // the rest are the suspects
 
   const murderRoom = rnd(ROOMS.length);
   const weapon     = pick(WEAPONS);
-  const victim     = pick(VICTIMS);
   const glassRoom  = rnd(ROOMS.length);
 
   // hide the bloodied weapon somewhere (the killer stashed it; may be anywhere)

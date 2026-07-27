@@ -20,11 +20,11 @@ function corroborators(G, name) {
 }
 
 const NAME_SETS = [
-  ['A', 'B', 'C', 'D', 'E'],                       // exactly 5
+  ['A', 'B', 'C', 'D', 'E'],                       // 5 guests -> 1 victim + 4? padded to 6 -> 5 suspects
   ['A', 'B', 'C', 'D', 'E', 'F'],                  // 6
   ['A', 'B', 'C', 'D', 'E', 'F', 'G'],             // 7
-  ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],        // 8
-  ['Solo'],                                        // 1 -> padded to 5
+  ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],   // 9 -> victim + 8 suspects (cap)
+  ['Solo'],                                        // 1 -> padded
   ['A', 'A', 'B'],                                 // dupes -> deduped & padded
 ];
 
@@ -49,6 +49,11 @@ for (const set of NAME_SETS) {
 
     // 4) the room is discoverable (bloodstains mark the murder room)
     if (G.objects[G.murderRoom]?.kind !== 'blood') { fails++; console.error('FAIL: no bloodstains in murder room'); continue; }
+
+    // 4b) the victim is one of the guests, and is neither a suspect nor the murderer
+    if (!G.victim) { fails++; console.error('FAIL: no victim'); continue; }
+    if (G.suspects.includes(G.victim)) { fails++; console.error('FAIL: victim is also a suspect', G.victim); continue; }
+    if (G.victim === G.murdererName) { fails++; console.error('FAIL: victim is the murderer'); continue; }
 
     // 5) the weapon is discoverable (a weapon object exists, or it is at the scene)
     const hasWeaponObj = Object.values(G.objects).some(o => o.kind === 'weapon') || G.weaponAtScene;

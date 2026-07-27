@@ -15,7 +15,8 @@ open index.html          # or serve it: npm start  ->  http://127.0.0.1:8065
 ## The case
 
 Every game randomizes the **murderer**, the **weapon**, the **room**, the
-**victim**, and where the **magnifying glass** is hidden. You win by naming the
+**victim** (one of the party guests, drawn at random — the rest are your
+suspects), and where the **magnifying glass** is hidden. You win by naming the
 murderer, weapon, and room correctly. Get any of the three wrong, or run out of
 time, and the killer gets *you*.
 
@@ -55,7 +56,9 @@ you in the same room, or your time runs out, you're dead. Difficulty (Rookie /
 Detective / Master Sleuth) tunes the move budget and how fast suspicion builds.
 
 Add your friends' names as the guests on the start screen — a nod to the
-original, which let you cast your own suspects.
+original, which let you cast your own party. As in the original, **one guest is
+chosen at random as the victim** and the rest become the suspects, so any name
+you enter (your own included) might be the one found dead.
 
 ## Project layout
 
