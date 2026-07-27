@@ -33,9 +33,16 @@ const UPPER_ROOMS  = ['Master Bedroom','Guest Room','Nursery','Bathroom','Galler
 // direction (N/S/E/W within a floor, U/D via stairs) to the neighbouring index.
 let ROOMS = [];          // global index -> room name
 let ADJ = [];            // global index -> { N,S,E,W,U,D: index }
-let FLOORS = [];         // render metadata -> [{ name, w, h, cells:[globalIdx...] }]
-let ROOM_META = [];      // global index -> { floor, r, c, stair:bool }
+let FLOORS = [];         // per floor -> { name, w, h, cells, tiles, owner, W, H }
+let ROOM_META = [];      // global index -> { floor, r, c, stair, rect, stairTile }
 let STORIES = 1;
+
+// Tile floorplan: each room is a walled rectangle, neighbours joined by a
+// doorway gap in the shared wall — an overhead line-drawn map you walk with a
+// dot, like the original. Rooms share walls (1 tile thick).
+const TILE = { WALL: 0, FLOOR: 1, DOOR: 2, STAIR: 3 };
+const RW = 7, RH = 4;              // room interior size, in tiles
+const PX = RW + 1, PY = RH + 1;    // grid pitch (interior + one shared wall)
 
 function buildMansion(stories) {
   ROOMS = []; ADJ = []; FLOORS = []; ROOM_META = []; STORIES = stories;
@@ -82,9 +89,50 @@ function buildMansion(stories) {
       ROOM_META[gi].stair = ROOM_META[ui].stair = true;
     });
   }
+
+  buildTiles();
+}
+
+// Turn the room grid into a walkable tile floorplan (walls, doors, stairs).
+function buildTiles() {
+  FLOORS.forEach((f, fi) => {
+    const W = 1 + f.w * PX, H = 1 + f.h * PY;
+    const tiles = Array.from({ length: H }, () => new Array(W).fill(TILE.WALL));
+    const owner = Array.from({ length: H }, () => new Array(W).fill(-1));
+
+    // carve each room's interior as floor, owned by that room
+    for (let r = 0; r < f.h; r++) for (let c = 0; c < f.w; c++) {
+      const gi = f.cells[r * f.w + c];
+      const x0 = 1 + c * PX, y0 = 1 + r * PY;
+      for (let y = y0; y < y0 + RH; y++) for (let x = x0; x < x0 + RW; x++) { tiles[y][x] = TILE.FLOOR; owner[y][x] = gi; }
+      ROOM_META[gi].rect = { x: x0, y: y0, w: RW, h: RH, floor: fi };
+    }
+
+    // punch a doorway in each shared wall (one to the east, one to the south)
+    for (let r = 0; r < f.h; r++) for (let c = 0; c < f.w; c++) {
+      const R = ROOM_META[f.cells[r * f.w + c]].rect;
+      if (c < f.w - 1) tiles[R.y + (RH >> 1)][R.x + RW]        = TILE.DOOR;   // door to the east neighbour
+      if (r < f.h - 1) tiles[R.y + RH][R.x + (RW >> 1)]        = TILE.DOOR;   // door to the south neighbour
+    }
+
+    f.tiles = tiles; f.owner = owner; f.W = W; f.H = H;
+  });
+
+  // a staircase tile in the corner of each stair room
+  ROOM_META.forEach((m) => {
+    if (!m.stair) return;
+    const sx = m.rect.x + RW - 1, sy = m.rect.y;   // top-right corner
+    FLOORS[m.floor].tiles[sy][sx] = TILE.STAIR;
+    m.stairTile = { x: sx, y: sy };
+  });
 }
 
 const DIR_WORD = { N: 'north', S: 'south', E: 'east', W: 'west', U: 'upstairs', D: 'downstairs' };
+const roomAt = (floor, x, y) => {
+  const f = FLOORS[floor];
+  if (!f || y < 0 || y >= f.H || x < 0 || x >= f.W) return -1;
+  return f.owner[y][x];
+};
 
 // There is no body — the murder room is betrayed by what it leaves on the floor.
 // `scene` is what a close look at the stains reveals; `klass` is the category it
@@ -244,7 +292,10 @@ function newGame(names, diffKey) {
     suspects, murdererName, weapon, victim,
     murderRoom, weaponRoom, weaponAtScene, glassRoom,
     people, objects, positions,
-    player: 0,               // player's room (index 0 = the entrance / front door)
+    player: 0,               // player's current ROOM index (index 0 = the entrance)
+    pfloor: ROOM_META[0].floor,               // which floor the dot is on
+    px: ROOM_META[0].rect.x + (RW >> 1),      // the dot's tile position
+    py: ROOM_META[0].rect.y + (RH >> 1),
     hasGlass: false,
     turnsLeft: diff.turns,
     suspicion: 0,
@@ -280,34 +331,65 @@ function log(text, cls = 'evt') {
   $('#log-box').scrollTop = $('#log-box').scrollHeight;
 }
 
+const escHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const WALL_CH = '█';
+
+// Draw each floor as an overhead line-art floorplan (a <pre> of tiles), with the
+// player as a dot walking through rooms/doorways and the guests as lettered dots.
 function renderMap() {
-  const adjSet = new Set(Object.values(neighbors(G.player)));
   const map = $('#map');
   map.innerHTML = '';
-  FLOORS.forEach(f => {
+
+  // overlays: guests (their initial) placed within their current room, then you
+  const overlay = FLOORS.map(() => ({}));
+  const perRoom = {};
+  G.suspects.forEach(n => {
+    const ri = G.positions[n], m = ROOM_META[ri];
+    const k = perRoom[ri] = (perRoom[ri] || 0) + 1;
+    const off = k - 1;
+    const gx = m.rect.x + (off % m.rect.w);
+    const gy = m.rect.y + Math.min(m.rect.h - 1, (off / m.rect.w) | 0);
+    overlay[m.floor][gy + ',' + gx] = { ch: n[0].toUpperCase(), cls: 'g-guest' };
+  });
+  overlay[G.pfloor][G.py + ',' + G.px] = { ch: '@', cls: 'g-you' };
+
+  FLOORS.forEach((f, fi) => {
     const wrap = document.createElement('div');
     wrap.className = 'floor';
     if (f.name) {
       const label = document.createElement('div');
-      label.className = 'floor-label' + (ROOM_META[G.player].floor === FLOORS.indexOf(f) ? ' active' : '');
+      label.className = 'floor-label' + (G.pfloor === fi ? ' active' : '');
       label.textContent = f.name;
       wrap.appendChild(label);
     }
-    const grid = document.createElement('div');
-    grid.className = 'floor-grid';
-    grid.style.gridTemplateColumns = `repeat(${f.w}, 1fr)`;
-    f.cells.forEach(i => {
-      const cell = document.createElement('div');
-      const here = i === G.player, adj = adjSet.has(i);
-      cell.className = 'cell' + (here ? ' here' : (adj ? ' adj' : ''));
-      const marks = G.markers[i] ? [...G.markers[i]].join(' ') : '';
-      const stair = ROOM_META[i].stair ? '<span class="stair">↕</span>' : '';
-      const you = here ? '@' : '';
-      cell.innerHTML = `<div class="cell-mark">${you || [marks, stair].filter(Boolean).join(' ') || '&nbsp;'}</div><div>${ROOMS[i]}</div>`;
-      cell.onclick = () => { if (adj) moveTo(i); else if (here) doLook(); };
-      grid.appendChild(cell);
-    });
-    wrap.appendChild(grid);
+    const pre = document.createElement('pre');
+    pre.className = 'floormap';
+    let html = '';
+    for (let y = 0; y < f.H; y++) {
+      let run = '', runCls = null;
+      const flush = () => { if (run) { html += runCls ? `<span class="${runCls}">${escHtml(run)}</span>` : escHtml(run); run = ''; } };
+      for (let x = 0; x < f.W; x++) {
+        const ov = overlay[fi][y + ',' + x];
+        let ch, cls;
+        if (ov) { ch = ov.ch; cls = ov.cls; }
+        else {
+          const t = f.tiles[y][x];
+          if (t === TILE.WALL)       { ch = WALL_CH; cls = 'g-wall'; }
+          else if (t === TILE.STAIR) { ch = '≣';     cls = 'g-stair'; }
+          else {                                   // FLOOR or DOOR (a gap)
+            const owner = f.owner[y][x];
+            if (owner >= 0 && owner === G.player) { ch = '·'; cls = 'g-here'; }  // the room you're in
+            else { ch = ' '; cls = null; }
+          }
+        }
+        if (cls !== runCls) { flush(); runCls = cls; }
+        run += ch;
+      }
+      flush();
+      html += '\n';
+    }
+    pre.innerHTML = html;
+    wrap.appendChild(pre);
     map.appendChild(wrap);
   });
 }
@@ -412,15 +494,27 @@ function spendTurn() {
    Actions
    -------------------------------------------------------------------------- */
 
-function moveTo(target) {
+// Walk the dot one tile. Walls block; stepping through a doorway into a new room
+// costs a move (spends a turn) and triggers that room's arrival logic.
+function stepDir(dx, dy) {
   if (G.over) return;
-  const adj = Object.values(neighbors(G.player));
-  if (!adj.includes(target)) { log('You can only move to an adjoining room.', 'sys'); return; }
+  const f = FLOORS[G.pfloor];
+  const nx = G.px + dx, ny = G.py + dy;
+  if (ny < 0 || ny >= f.H || nx < 0 || nx >= f.W) return;
+  if (f.tiles[ny][nx] === TILE.WALL) return;   // blocked, silently
+  G.px = nx; G.py = ny;
+  const ri = f.owner[ny][nx];                  // -1 on a doorway between rooms
+  if (ri >= 0 && ri !== G.player) enterRoom(ri);
+  else renderMap();                            // just redraw the dot moving
+}
+
+// Arriving in a new room: the turn-costing event (also used by the stairs).
+function enterRoom(target, viaStairs) {
   const changedFloor = ROOM_META[target].floor !== ROOM_META[G.player].floor;
   G.player = target;
   G.visited.add(target);
-  if (changedFloor) log(`You take the stairs to the <span class="hl">${ROOMS[target]}</span> <span class="dim">(${FLOORS[ROOM_META[target].floor].name})</span>.`, 'you');
-  else log(`You move into the <span class="hl">${ROOMS[target]}</span>.`, 'you');
+  if (viaStairs || changedFloor) log(`You take the stairs to the <span class="hl">${ROOMS[target]}</span> <span class="dim">(${FLOORS[ROOM_META[target].floor].name})</span>.`, 'you');
+  else log(`You enter the <span class="hl">${ROOMS[target]}</span>.`, 'you');
   // A guest lingering at the scene often — but not always — gives it away by
   // staring at the floor. (You can also just spot the stains yourself: EXAMINE.)
   if (target === G.murderRoom && !G.knownRoom) {
@@ -432,13 +526,22 @@ function moveTo(target) {
   spendTurn();
 }
 
+// Take the stairs (UP/DOWN) when you're standing in a staircase room.
+function takeStairs(d) {
+  if (G.over) return;
+  const tgt = (ADJ[G.player] || {})[d];
+  if (tgt == null) { log('There are no stairs in this room. Find a staircase (marked ≣).', 'sys'); return; }
+  const m = ROOM_META[tgt];
+  G.pfloor = m.floor;
+  G.px = m.rect.x + (RW >> 1);
+  G.py = m.rect.y + (RH >> 1);
+  enterRoom(tgt, true);
+}
+
 function moveDir(d) {
-  const adj = neighbors(G.player);
-  if (adj[d] == null) {
-    if ((d === 'U' || d === 'D')) { log('There are no stairs in this room.', 'sys'); return; }
-    log(`There is no exit to the ${DIR_WORD[d]}.`, 'sys'); return;
-  }
-  moveTo(adj[d]);
+  if (d === 'U' || d === 'D') return takeStairs(d);
+  const v = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] }[d];
+  if (v) stepDir(v[0], v[1]);
 }
 
 function doLook() {
@@ -690,8 +793,8 @@ function dumpNotebook() {
 function showHelp() {
   log('<span class="cyan">— COMMANDS —</span>', 'clue');
   [
-    'Move:      N / S / E / W  (or arrow keys, or click an adjoining room)',
-    'UP / DOWN  — take the stairs between floors (two-story houses only)',
+    'Move:      arrow keys walk your dot (@) through rooms and doorways (or N/S/E/W)',
+    'UP / DOWN  — take the stairs (≣) between floors; also PageUp / PageDown',
     'LOOK       — describe the current room',
     'TAKE glass — pick up the magnifying glass',
     'EXAMINE    — inspect the clue in this room (bloodstains reveal the ROOM; the glass reveals more)',
@@ -722,7 +825,7 @@ function startGame() {
     : 'a sprawling <span class="hl">single-story estate</span>';
   log(`<span class="clue">A scream echoes through ${house}. ${G.victim} has been murdered — the body already spirited away, but the killer left their mark on the floor of one room.</span>`);
   log(`The guests — <span class="cyan">${G.suspects.join(', ')}</span> — are all still here. One of them is the murderer.`);
-  if (G.stories === 2) log(`Rooms sit on two floors; use the <span class="cyan">stairs</span> (UP / DOWN, or click across) to move between them.`, 'sys');
+  if (G.stories === 2) log(`Rooms sit on two floors; stand in a staircase room (marked <span class="g-stair">≣</span>) and press <span class="cyan">UP / DOWN</span> (or PageUp/PageDown) to move between them.`, 'sys');
   log(`Find the bloodstained room, find the weapon, and unmask the liar before your time runs out. Type <span class="cyan">HELP</span> to begin.`);
   renderAll();
   $('#cmd-input').focus();
@@ -766,13 +869,13 @@ function initEvents() {
     };
   });
 
-  // arrow keys to move (when not typing in a field, or field empty)
+  // arrow keys walk the dot; PageUp/PageDown take the stairs (field empty only)
   document.addEventListener('keydown', e => {
     if (!G || G.over) return;
     const inField = document.activeElement === $('#cmd-input') && $('#cmd-input').value !== '';
     if (inField) return;
     if ($('#game-screen').classList.contains('hidden')) return;
-    const map = { ArrowUp:'N', ArrowDown:'S', ArrowLeft:'W', ArrowRight:'E' };
+    const map = { ArrowUp:'N', ArrowDown:'S', ArrowLeft:'W', ArrowRight:'E', PageUp:'U', PageDown:'D' };
     if (map[e.key]) { e.preventDefault(); moveDir(map[e.key]); }
   });
 

@@ -77,6 +77,34 @@ for (const set of NAME_SETS) {
       const hasStairs = META.some(m => m.stair) && ADJ.some(a => a.U != null) && ADJ.some(a => a.D != null);
       if (!hasStairs) { fails++; console.error('FAIL: two-story house has no stairs'); continue; }
     } else if (FLOORS.length !== 1) { fails++; console.error('FAIL: one-story but', FLOORS.length, 'floors'); continue; }
+
+    // 7) the TILE floorplan is walkable: on each floor, a flood-fill over floor
+    //    tiles from one room's centre must reach every room's interior — i.e. the
+    //    doorways actually connect the rooms you can walk between.
+    let tileFail = false;
+    for (const f of FLOORS) {
+      const start = META.find(m => m.floor === FLOORS.indexOf(f)).rect;
+      const seenT = new Set(), st = [[start.x, start.y]];
+      const key = (x, y) => y * f.W + x;
+      seenT.add(key(start.x, start.y));
+      while (st.length) {
+        const [x, y] = st.pop();
+        for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= f.W || ny >= f.H) continue;
+          if (f.tiles[ny][nx] === 0) continue;               // wall
+          if (seenT.has(key(nx, ny))) continue;
+          seenT.add(key(nx, ny)); st.push([nx, ny]);
+        }
+      }
+      // every room interior tile on this floor must have been reached
+      const roomsOnFloor = META.filter(m => m.floor === FLOORS.indexOf(f));
+      for (const m of roomsOnFloor) {
+        if (!seenT.has(key(m.rect.x, m.rect.y))) { tileFail = true; break; }
+      }
+      if (tileFail) break;
+    }
+    if (tileFail) { fails++; console.error('FAIL: floorplan has an unreachable room (bad doorway)'); continue; }
   }
 }
 

@@ -42,22 +42,28 @@ This invariant is checked in `test/solvable.test.js`.
 
 ### The house (one story or two)
 
-As in the original, each game is set in one of two houses, **chosen at random**:
+The map is an **overhead line-art floorplan**, like the original: walled rooms
+joined by **doorways**, and your character is a **dot (`@`)** that walks through
+them (guests show as lettered dots). As in the original, each game is set in one
+of two houses, **chosen at random**:
 
-- a sprawling **single-story estate** — one 4×4 grid of rooms, and
+- a sprawling **single-story estate** — one floor of sixteen rooms, and
 - a **two-story mansion** — two floors (Ground and Upper) drawn side by side
-  with a break between them, joined by **staircases** at opposite corners.
+  with a break between them, joined by **staircases** (`≣`) at opposite corners.
 
-Both hold sixteen rooms. On the two-story map you move within a floor with the
-usual N/S/E/W and cross between floors on the stairs (**UP** / **DOWN**, or just
-click the linked room across the break). The murder can happen on either floor,
-and the guests roam between floors too. The solvability test also checks that
-every room is reachable from the front door — including across the stairs.
+Both hold sixteen rooms. You walk with the arrow keys; stepping through a
+doorway into a new room is what costs a move. To change floors, stand in a
+staircase room and press **UP** / **DOWN** (or PageUp/PageDown). The murder can
+happen on either floor, and the guests roam between floors too. The solvability
+test checks both that every room is reachable through the room graph and that
+the tile floorplan itself is walkable (doorways actually connect the rooms).
 
 ## How to play
 
-- **Move**: arrow keys, `N`/`S`/`E`/`W`, or click an adjoining room on the map.
-  In a two-story house, **`UP`**/**`DOWN`** take the stairs between floors.
+- **Move**: **arrow keys** walk your dot (`@`) through rooms and doorways
+  (`N`/`S`/`E`/`W` step one tile too). Entering a new room spends a move.
+- **Stairs**: in a two-story house, stand in a staircase room and press
+  **`UP`**/**`DOWN`** (or PageUp/PageDown) to cross between floors.
 - **`TAKE glass`**: pick up the magnifying glass (required before you can examine clues).
 - **`EXAMINE`**: inspect the clue in the current room (or click the object).
 - **`QUESTION <name>`**: ask a guest for their alibi (or click a guest). **Don't over-ask** — the murderer notices.
