@@ -4,7 +4,8 @@
 
    The case is randomized every game: murderer, weapon, room, victim, and the
    location of the magnifying glass. You solve it by:
-     • finding the body      -> reveals the ROOM
+     • finding the bloodstains-> reveals the ROOM (a guest may be staring at
+                                 the floor there — usually, but not always)
      • finding the weapon     -> reveals the WEAPON (examine needs the glass)
      • cross-examining alibis -> reveals the MURDERER (one liar; nobody backs
                                  up their story)
@@ -26,17 +27,19 @@ const ROOMS = [
 ];
 const GRID_W = 4, GRID_H = 4;
 
-// weapon -> wound description (some blunt weapons deliberately overlap, so the
-// wound narrows the field but the bloodied weapon itself gives certainty)
+// There is no body — the murder room is betrayed by what it leaves on the floor.
+// `scene` is what a close look at the stains reveals; `klass` is the category it
+// points to (several weapons share a category on purpose, so the scene narrows
+// the field and finding the actual weapon gives certainty).
 const WEAPONS = [
-  { name: 'Knife',        wound: 'a deep stab wound' },
-  { name: 'Revolver',     wound: 'a single gunshot wound' },
-  { name: 'Candlestick',  wound: 'blunt trauma to the skull' },
-  { name: 'Lead Pipe',    wound: 'a heavy crushing blow' },
-  { name: 'Rope',         wound: 'ligature marks around the throat' },
-  { name: 'Wrench',       wound: 'a heavy crushing blow' },
-  { name: 'Poison',       wound: 'no wound at all — the lips are stained blue' },
-  { name: 'Letter Opener',wound: 'a narrow puncture wound' },
+  { name: 'Knife',        scene: 'clean, deep bloodstains and a slash torn across the rug', klass: 'a bladed weapon' },
+  { name: 'Revolver',     scene: 'a bullet hole in the panelling and powder scorch marks',  klass: 'a firearm' },
+  { name: 'Candlestick',  scene: 'a wide arc of blood spatter — a heavy swinging blow',      klass: 'a blunt weapon' },
+  { name: 'Lead Pipe',    scene: 'heavy blood spatter pooled across the floorboards',        klass: 'a blunt weapon' },
+  { name: 'Rope',         scene: 'almost no blood — only deep heel-scuffs and frayed fibres', klass: 'a strangling weapon' },
+  { name: 'Wrench',       scene: 'a heavy crushing stain and a greasy tool-mark',            klass: 'a blunt weapon' },
+  { name: 'Poison',       scene: 'no blood at all — a spilled glass and a bitter-almond smell', klass: 'poison' },
+  { name: 'Letter Opener',scene: 'a small, neat pool of blood',                              klass: 'a slim blade' },
 ];
 
 const VICTIMS = [
@@ -66,6 +69,16 @@ const DIFF = {
   normal: { turns: 44, suspThreshold: 5, label: 'Detective' },
   hard:   { turns: 30, suspThreshold: 3, label: 'Master Sleuth' },
 };
+
+// map marker for the discovered crime scene (red, unlike the plain glass/weapon marks)
+const BLOOD_MARK = '<span class="bad">✖</span>';
+
+// what you first notice on the floor of the murder room (weapon-appropriate)
+function sceneNoun(weapon) {
+  if (/poison/i.test(weapon.name)) return 'a spilled glass and a dark patch on the floor';
+  if (/rope/i.test(weapon.name))   return 'deep scuff marks on the floor';
+  return 'dark stains on the floorboards';
+}
 
 /* --------------------------------------------------------------------------
    Small helpers
@@ -153,11 +166,12 @@ function newGame(names, diffKey) {
   people[murdererName].claimRoom = claimRoom;
   people[murdererName].claimWitness = claimWitness;
 
-  // build objects per room
+  // build objects per room. There is no body — the murder room is marked only
+  // by what's on the floor (blood, or in a poisoning, a spilled glass).
   const objects = {}; // roomIndex -> object
-  objects[murderRoom] = { kind: 'body', label: 'the body of ' + victim, examined: false };
+  objects[murderRoom] = { kind: 'blood', label: sceneNoun(weapon), examined: false };
   if (!objects[weaponRoom]) objects[weaponRoom] = { kind: 'weapon', label: 'a suspicious bundle', examined: false };
-  else weaponRoom = murderRoom; // weapon left at the scene; body chip already there, attach weapon flag
+  else weaponRoom = murderRoom; // weapon left at the scene; the stain chip is already there
   const weaponAtScene = (weaponRoom === murderRoom);
 
   // scatter a few decoys in empty rooms
@@ -182,7 +196,7 @@ function newGame(names, diffKey) {
     questioned: {},          // name -> count
     over: false,
     // discoveries
-    knownRoom: null,         // room name once body found
+    knownRoom: null,         // room name once the bloodstains are found
     knownWeapon: null,       // weapon name once weapon examined
     woundHint: null,
     visited: new Set([0]),
@@ -253,7 +267,7 @@ function renderRoom() {
   }
   if (obj) {
     const label = obj.kind === 'weapon' && obj.examined ? `⚔ ${G.knownWeapon} (bloodied)` :
-                  obj.kind === 'body'   ? `☠ ${obj.label}` : obj.label;
+                  obj.kind === 'blood'  ? `<span class="bad">✖</span> ${obj.label}` : obj.label;
     html += `<span class="chip object" data-x="${i}">${label}</span>`;
   }
   objBox.innerHTML = html ? `<span class="field-label">You notice:</span><br>${html}` : '';
@@ -331,9 +345,13 @@ function moveTo(target) {
   G.player = target;
   G.visited.add(target);
   log(`You move into the <span class="hl">${ROOMS[target]}</span>.`, 'you');
-  // ominous first entry to the murder scene
+  // A guest lingering at the scene often — but not always — gives it away by
+  // staring at the floor. (You can also just spot the stains yourself: EXAMINE.)
   if (target === G.murderRoom && !G.knownRoom) {
-    log('Something is very wrong here. The air is heavy, and a dark stain spreads across the floor…', 'clue');
+    const guestsHere = G.suspects.filter(n => G.positions[n] === target);
+    if (guestsHere.length && Math.random() < 0.7) {
+      log(`${pick(guestsHere)} stands oddly still, staring down at the floor…`, 'clue');
+    }
   }
   spendTurn();
 }
@@ -352,7 +370,7 @@ function doLook() {
   else log('You are alone in this room.', 'sys');
   const obj = G.objects[i];
   if (i === G.glassRoom && !G.hasGlass) log('A <span class="clue">magnifying glass</span> glints on a side table. (TAKE it.)', 'clue');
-  if (obj) log(`You notice <span class="clue">${obj.kind === 'body' ? obj.label : obj.label}</span>. (EXAMINE it.)`, 'clue');
+  if (obj) log(`You notice <span class="clue">${obj.label}</span>. (EXAMINE it.)`, 'clue');
   if (!obj && !(i === G.glassRoom && !G.hasGlass)) log('Nothing here seems important.', 'sys');
   // looking is free the first time per room, else costs a move? keep it free but roam anyway lightly
 }
@@ -371,24 +389,31 @@ function examineObject(room) {
   const obj = G.objects[room];
   if (!obj) { log('There is nothing here worth examining.', 'sys'); return; }
 
-  if (!G.hasGlass) {
-    log('You crouch to look closer, but the details are lost to you. You need a <span class="clue">magnifying glass</span> first.', 'warn');
-    return;
-  }
-
-  if (obj.kind === 'body') {
+  if (obj.kind === 'blood') {
+    // The stains are plain to the naked eye — they confirm the ROOM with no glass.
     obj.examined = true;
+    const firstTime = !G.knownRoom;
     G.knownRoom = ROOMS[room];
-    addMarker(room, '☠');
-    log(`It is <span class="hl">${obj.label}</span>. The murder happened <span class="good">right here, in the ${ROOMS[room]}</span>.`, 'clue');
-    G.woundHint = describeWoundClass(G.weapon.wound);
-    log(`The wound: <span class="clue">${G.weapon.wound}</span>. ${woundInference(G.weapon.wound)}`, 'clue');
-    if (G.weaponAtScene) {
-      G.knownWeapon = G.weapon.name;
-      addMarker(room, '⚔');
-      log(`The weapon was left beside the body: a <span class="good">bloodied ${G.weapon.name}</span>. Weapon confirmed.`, 'clue');
+    addMarker(room, BLOOD_MARK);
+    if (firstTime) log(`You kneel over <span class="hl">${obj.label}</span>. This is it — the murder happened <span class="good">right here, in the ${ROOMS[room]}</span>.`, 'clue');
+    // The glass is what lets you read the scene closely for the weapon.
+    if (G.hasGlass) {
+      if (!G.woundHint) {
+        G.woundHint = G.weapon.klass;
+        log(`Through the glass: <span class="clue">${G.weapon.scene}</span>. It points to <span class="clue">${G.weapon.klass}</span>. Find the weapon to be sure.`, 'clue');
+      }
+      if (G.weaponAtScene && !G.knownWeapon) {
+        G.knownWeapon = G.weapon.name;
+        addMarker(room, '⚔');
+        log(`The weapon was dropped here at the scene: a <span class="good">bloodied ${G.weapon.name}</span>. Weapon confirmed.`, 'clue');
+      }
+    } else {
+      log('There is more to read in these marks, but not with the naked eye — you need a <span class="clue">magnifying glass</span>.', 'warn');
     }
     spendTurn();
+  } else if (!G.hasGlass) {
+    log('You crouch to look closer, but the details are lost to you. You need a <span class="clue">magnifying glass</span> first.', 'warn');
+    return;
   } else if (obj.kind === 'weapon') {
     obj.examined = true;
     G.knownWeapon = G.weapon.name;
@@ -400,24 +425,6 @@ function examineObject(room) {
     log(`You examine ${obj.label}. <span class="dim">${DECOY_FLAVOR[obj.label] || 'Nothing useful.'}</span>`, 'sys');
     spendTurn();
   }
-}
-
-function describeWoundClass(w) {
-  if (/blunt|crushing/.test(w)) return 'a blunt weapon';
-  if (/stab|puncture/.test(w))  return 'a bladed weapon';
-  if (/gunshot/.test(w))        return 'a firearm';
-  if (/ligature/.test(w))       return 'a strangling weapon';
-  if (/blue/.test(w))           return 'poison';
-  return 'an unknown weapon';
-}
-function woundInference(w) {
-  if (/blunt|crushing/.test(w)) return 'A blunt instrument — Candlestick, Lead Pipe, or Wrench. Find it to be certain.';
-  if (/stab/.test(w))           return 'A blade — the Knife, most likely.';
-  if (/puncture/.test(w))       return 'A slim blade — perhaps the Letter Opener.';
-  if (/gunshot/.test(w))        return 'The Revolver. Unmistakable.';
-  if (/ligature/.test(w))       return 'Strangled — the Rope.';
-  if (/blue/.test(w))           return 'Poison. No struggle at all.';
-  return '';
 }
 
 function questionPerson(name) {
@@ -600,13 +607,13 @@ function showHelp() {
     'Move:      N / S / E / W  (or arrow keys, or click an adjoining room)',
     'LOOK       — describe the current room',
     'TAKE glass — pick up the magnifying glass',
-    'EXAMINE    — inspect the clue in this room (needs the glass)',
+    'EXAMINE    — inspect the clue in this room (bloodstains reveal the ROOM; the glass reveals more)',
     'QUESTION &lt;name&gt; — ask a guest for their alibi (don\'t overdo it!)',
     'NOTEBOOK   — review the clues and alibis you\'ve gathered',
     'ACCUSE     — name the murderer, weapon, and room (one shot — be right)',
     'WAIT       — let a moment pass',
   ].forEach(t => log(t, 'sys'));
-  log('<span class="dim">Find the body (room), the weapon, and spot the liar (murderer).</span>', 'sys');
+  log('<span class="dim">Find the bloodstained room, the weapon, and spot the liar (murderer). Watch for a guest staring at the floor.</span>', 'sys');
 }
 
 /* --------------------------------------------------------------------------
@@ -623,9 +630,9 @@ function startGame() {
   $('#end-modal').classList.add('hidden');
   $('#log').innerHTML = '';
 
-  log(`<span class="clue">A scream echoes through the mansion. ${G.victim} lies dead.</span>`);
+  log(`<span class="clue">A scream echoes through the mansion. ${G.victim} has been murdered — the body already spirited away, but the killer left their mark on the floor of one room.</span>`);
   log(`The guests — <span class="cyan">${G.suspects.join(', ')}</span> — are all still here. One of them is the murderer.`);
-  log(`Find the body, find the weapon, and unmask the liar before your time runs out. Type <span class="cyan">HELP</span> to begin.`);
+  log(`Find the bloodstained room, find the weapon, and unmask the liar before your time runs out. Type <span class="cyan">HELP</span> to begin.`);
   renderAll();
   $('#cmd-input').focus();
 

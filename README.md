@@ -23,8 +23,8 @@ You solve three separate sub-puzzles:
 
 | Clue         | How you find it                                                        |
 |--------------|-----------------------------------------------------------------------|
-| **The room** | Find the **body** (it's in the murder room). Examine it with the glass. |
-| **The weapon** | The wound narrows it down; find the **bloodied weapon** to be certain. |
+| **The room** | There's no body — the murder room is betrayed by **bloodstains on the floor**. A guest is often (but not always) found *staring at the floor* there. Walk in and **examine** them. |
+| **The weapon** | Examine the stains with the **glass** to read the scene (it narrows the field); find the **bloodied weapon** to be certain. |
 | **The murderer** | Cross-examine alibis. Exactly one guest is lying, and *nobody backs up their story*. |
 
 ### The deduction (why it's always fair)

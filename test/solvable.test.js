@@ -47,8 +47,8 @@ for (const set of NAME_SETS) {
     // 3) murderer did NOT truly stand where they claim (their alibi is a lie)
     if (G.people[G.murdererName].claimRoom === G.murderRoom) { fails++; console.error('FAIL: murderer claim == scene'); continue; }
 
-    // 4) the room is discoverable (body is in the murder room)
-    if (G.objects[G.murderRoom]?.kind !== 'body') { fails++; console.error('FAIL: no body in murder room'); continue; }
+    // 4) the room is discoverable (bloodstains mark the murder room)
+    if (G.objects[G.murderRoom]?.kind !== 'blood') { fails++; console.error('FAIL: no bloodstains in murder room'); continue; }
 
     // 5) the weapon is discoverable (a weapon object exists, or it is at the scene)
     const hasWeaponObj = Object.values(G.objects).some(o => o.kind === 'weapon') || G.weaponAtScene;
