@@ -1,0 +1,245 @@
+/* ===========================================================
+   SLEUTH — a 1983 DOS whodunit, reborn in the browser.
+   Aesthetic: IBM CGA / EGA phosphor terminal.
+   =========================================================== */
+
+:root {
+  /* CGA-ish palette */
+  --bg:        #0a0a0f;
+  --amber:     #ffb000;   /* primary phosphor */
+  --amber-dim: #a06e00;
+  --green:     #33ff66;
+  --cyan:      #22d3ee;
+  --red:       #ff5555;
+  --white:     #e8e8e8;
+  --gray:      #8a8a8a;
+  --panel:     #12121a;
+  --border:    #3a3a10;
+  --border-hi: #ffb000;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #000;
+  color: var(--amber);
+  font-family: "Courier New", "Lucida Console", Consolas, monospace;
+  font-size: 15px;
+  line-height: 1.35;
+  -webkit-font-smoothing: none;
+}
+
+/* CRT shell */
+#crt {
+  min-height: 100vh;
+  padding: 18px;
+  background:
+    radial-gradient(ellipse at center, #0e0e14 0%, #000 100%);
+}
+
+#screen {
+  max-width: 1100px;
+  margin: 0 auto;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  padding: 16px 18px 22px;
+  position: relative;
+  box-shadow: 0 0 30px rgba(255, 176, 0, 0.08), inset 0 0 60px rgba(0,0,0,0.6);
+}
+
+/* scanlines overlay */
+#screen::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 2px,
+    rgba(0,0,0,0.18) 3px,
+    rgba(0,0,0,0.18) 3px
+  );
+  z-index: 50;
+  mix-blend-mode: multiply;
+}
+
+.hidden { display: none !important; }
+
+.hl  { color: var(--white); text-shadow: 0 0 6px rgba(255,176,0,0.5); }
+.good { color: var(--green); }
+.bad  { color: var(--red); }
+.cyan { color: var(--cyan); }
+.dim  { color: var(--gray); }
+
+/* ============ START SCREEN ============ */
+#title-art {
+  color: var(--amber);
+  text-shadow: 0 0 10px rgba(255,176,0,0.4);
+  font-size: 11px;
+  line-height: 1.05;
+  margin: 4px 0 0;
+  white-space: pre;
+  overflow-x: auto;
+}
+.tag {
+  letter-spacing: 6px;
+  color: var(--cyan);
+  margin: 2px 0 2px;
+  font-size: 13px;
+}
+.sub { color: var(--gray); margin: 0 0 14px; font-size: 13px; }
+
+.briefing { border-left: 3px solid var(--border-hi); padding-left: 14px; margin: 14px 0; }
+.briefing p { margin: 8px 0; color: var(--amber); }
+
+.names-label { display: block; color: var(--cyan); margin: 16px 0 4px; font-size: 13px; }
+#names-input {
+  width: 100%;
+  background: #000;
+  border: 1px solid var(--border);
+  color: var(--green);
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 14px;
+}
+#names-input:focus { outline: none; border-color: var(--border-hi); }
+
+.difficulty { margin: 16px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.difficulty > span { color: var(--cyan); }
+.diff-btn {
+  background: #000; border: 1px solid var(--border); color: var(--amber-dim);
+  padding: 6px 12px; font-family: inherit; cursor: pointer; font-size: 13px;
+}
+.diff-btn.active { border-color: var(--border-hi); color: var(--amber); background: #1a1400; }
+.diff-btn:hover { color: var(--amber); }
+
+.big-btn {
+  background: #1a1400; border: 2px solid var(--border-hi); color: var(--amber);
+  padding: 10px 20px; font-family: inherit; font-size: 15px; cursor: pointer;
+  text-shadow: 0 0 6px rgba(255,176,0,0.4); margin-top: 8px;
+}
+.big-btn:hover { background: var(--amber); color: #000; }
+.big-btn.danger { border-color: var(--red); color: var(--red); }
+.big-btn.danger:hover { background: var(--red); color: #000; }
+
+/* ============ GAME LAYOUT ============ */
+#game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 760px) { #game-grid { grid-template-columns: 1fr; } }
+
+.box {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  padding: 8px 10px 10px;
+  margin-bottom: 10px;
+  position: relative;
+}
+.box-title {
+  color: var(--cyan);
+  font-size: 12px;
+  letter-spacing: 2px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+/* ---- Map ---- */
+#map { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.cell {
+  border: 1px solid var(--border);
+  aspect-ratio: 1 / 0.72;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-size: 10px; text-align: center; color: var(--amber-dim);
+  padding: 2px; cursor: pointer; position: relative;
+  line-height: 1.05;
+}
+.cell:hover { border-color: var(--amber-dim); }
+.cell.here {
+  border-color: var(--border-hi); color: var(--amber);
+  background: #1a1400; box-shadow: 0 0 10px rgba(255,176,0,0.25);
+}
+.cell.adj { border-color: var(--amber-dim); color: var(--amber); }
+.cell .cell-mark { font-size: 12px; color: var(--white); min-height: 12px; }
+.cell.here .cell-mark { color: var(--green); }
+
+/* ---- Room detail ---- */
+#room-desc { color: var(--amber); margin-bottom: 6px; }
+#room-occupants, #room-objects { margin-top: 6px; }
+.chip {
+  display: inline-block; border: 1px solid var(--border); padding: 2px 8px;
+  margin: 3px 4px 0 0; cursor: pointer; font-size: 13px; color: var(--amber);
+}
+.chip:hover { border-color: var(--border-hi); background: #1a1400; }
+.chip.person { color: var(--cyan); border-color: #164e63; }
+.chip.person:hover { background: #06283a; }
+.chip.object { color: var(--green); border-color: #14532d; }
+.chip.object:hover { background: #04220f; }
+.field-label { color: var(--gray); font-size: 12px; }
+
+/* ---- Status ---- */
+#status-lines div { margin: 3px 0; }
+.meter { display: inline-block; letter-spacing: 1px; }
+
+/* ---- Notebook ---- */
+#notebook { font-size: 13px; max-height: 190px; overflow-y: auto; }
+.nb-entry { margin: 4px 0; padding-left: 10px; border-left: 2px solid var(--border); }
+.nb-entry b { color: var(--cyan); }
+.nb-empty { color: var(--gray); font-style: italic; }
+
+/* ---- Log ---- */
+#log-box { max-height: 190px; overflow-y: auto; background: #000; }
+#log { font-size: 14px; }
+#log .line { margin: 2px 0; white-space: pre-wrap; }
+#log .sys { color: var(--gray); }
+#log .you { color: var(--green); }
+#log .evt { color: var(--amber); }
+#log .warn { color: var(--red); }
+#log .clue { color: var(--cyan); }
+
+/* ---- Prompt ---- */
+#prompt-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.prompt-caret { color: var(--green); font-size: 18px; }
+#cmd-input {
+  flex: 1; background: #000; border: 1px solid var(--border);
+  color: var(--green); padding: 8px 10px; font-family: inherit; font-size: 15px;
+}
+#cmd-input:focus { outline: none; border-color: var(--border-hi); }
+#cmd-input::placeholder { color: #4a4a2a; }
+
+/* ---- Quick actions ---- */
+#quick-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+#quick-actions button {
+  background: #000; border: 1px solid var(--border); color: var(--amber);
+  padding: 6px 12px; font-family: inherit; cursor: pointer; font-size: 13px;
+}
+#quick-actions button:hover { border-color: var(--border-hi); background: #1a1400; }
+#quick-actions button.danger { color: var(--red); border-color: #4a1010; }
+#quick-actions button.danger:hover { background: var(--red); color: #000; }
+
+/* ============ MODALS ============ */
+.modal {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.82);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-inner { max-width: 480px; width: 100%; background: var(--bg); border: 2px solid var(--border-hi); }
+.modal-warn { color: var(--red); font-size: 13px; }
+.accuse-row { display: flex; align-items: center; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
+.accuse-row label { color: var(--amber); min-width: 120px; }
+.accuse-row select {
+  flex: 1; background: #000; border: 1px solid var(--border); color: var(--green);
+  padding: 6px; font-family: inherit; font-size: 14px; min-width: 140px;
+}
+.modal-buttons { display: flex; gap: 10px; margin-top: 12px; }
+
+#end-body { margin: 10px 0; }
+#end-body p { margin: 8px 0; }
+#end-title.win  { color: var(--green); }
+#end-title.lose { color: var(--red); }
+
+/* blinking cursor flourish */
+@keyframes blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+.cursor { animation: blink 1s steps(1) infinite; }

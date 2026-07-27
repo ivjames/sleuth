@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SLEUTH — A Murder Mystery</title>
+  <meta name="description" content="A browser clone of the 1983 DOS whodunit game Sleuth. Question the guests, examine the clues, and unmask the murderer before you become the next victim.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="crt">
+    <div id="screen">
+
+      <!-- ===== TITLE / START SCREEN ===== -->
+      <section id="start-screen" class="panel">
+        <pre id="title-art">
+ ██████  ██      ███████ ██    ██ ████████ ██   ██
+ ██      ██      ██      ██    ██    ██     ██   ██
+ ███████ ██      █████   ██    ██    ██     ███████
+      ██ ██      ██      ██    ██    ██     ██   ██
+ ██████  ███████ ███████  ██████     ██    ██   ██
+</pre>
+        <p class="tag">A  M U R D E R  M Y S T E R Y</p>
+        <p class="sub">Norland-style whodunit &mdash; a clone of the 1983 DOS classic</p>
+
+        <div class="briefing">
+          <p>A guest has been <span class="hl">murdered</span> in the mansion. You are the
+          detective. Somewhere in these rooms are a hidden <span class="hl">magnifying glass</span>,
+          the <span class="hl">body</span>, and the bloodied <span class="hl">weapon</span>.</p>
+          <p>Roam the halls, <span class="hl">examine</span> clues, and <span class="hl">question</span>
+          the guests &mdash; but tread carefully. Ask too many questions and the killer grows
+          suspicious. Dawdle too long and you become the next victim.</p>
+          <p>Name the <span class="hl">murderer</span>, the <span class="hl">weapon</span>, and the
+          <span class="hl">room</span> to close the case.</p>
+        </div>
+
+        <label class="names-label">Guests at the party (comma separated &mdash; add your friends!):</label>
+        <input id="names-input" type="text" spellcheck="false"
+               value="Lord Ashford, Lady Vaughn, Dr. Crane, Miss Ivory, Captain Reed, Mr. Bishop">
+
+        <div class="difficulty">
+          <span>Difficulty:</span>
+          <button class="diff-btn" data-diff="easy">Rookie</button>
+          <button class="diff-btn active" data-diff="normal">Detective</button>
+          <button class="diff-btn" data-diff="hard">Master Sleuth</button>
+        </div>
+
+        <button id="start-btn" class="big-btn">&gt; BEGIN INVESTIGATION</button>
+      </section>
+
+      <!-- ===== GAME SCREEN ===== -->
+      <section id="game-screen" class="panel hidden">
+        <div id="game-grid">
+          <!-- Map + room detail -->
+          <div id="left-col">
+            <div id="map-box" class="box">
+              <div class="box-title">MANSION MAP</div>
+              <div id="map"></div>
+            </div>
+            <div id="room-box" class="box">
+              <div class="box-title" id="room-title">ROOM</div>
+              <div id="room-desc"></div>
+              <div id="room-occupants"></div>
+              <div id="room-objects"></div>
+            </div>
+          </div>
+
+          <!-- Status + notebook -->
+          <div id="right-col">
+            <div id="status-box" class="box">
+              <div class="box-title">CASE STATUS</div>
+              <div id="status-lines"></div>
+            </div>
+            <div id="notebook-box" class="box">
+              <div class="box-title">DETECTIVE'S NOTEBOOK</div>
+              <div id="notebook"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Message log -->
+        <div id="log-box" class="box">
+          <div id="log"></div>
+        </div>
+
+        <!-- Command line -->
+        <div id="prompt-row">
+          <span class="prompt-caret">&gt;</span>
+          <input id="cmd-input" type="text" spellcheck="false" autocomplete="off"
+                 placeholder="type a command  (try: HELP)  —  or use arrow keys to move">
+        </div>
+
+        <!-- Quick action buttons -->
+        <div id="quick-actions">
+          <button data-cmd="look">Look</button>
+          <button data-cmd="examine">Examine</button>
+          <button data-cmd="question">Question</button>
+          <button data-cmd="notebook">Notebook</button>
+          <button data-cmd="accuse" class="danger">Accuse</button>
+          <button data-cmd="help">Help</button>
+        </div>
+      </section>
+
+      <!-- ===== ACCUSE MODAL ===== -->
+      <div id="accuse-modal" class="modal hidden">
+        <div class="modal-inner box">
+          <div class="box-title">MAKE YOUR ACCUSATION</div>
+          <p class="modal-warn">Be certain. A wrong accusation is the last mistake you'll make.</p>
+          <div class="accuse-row"><label>The murderer is</label><select id="acc-suspect"></select></div>
+          <div class="accuse-row"><label>The weapon was the</label><select id="acc-weapon"></select></div>
+          <div class="accuse-row"><label>in the</label><select id="acc-room"></select></div>
+          <div class="modal-buttons">
+            <button id="acc-confirm" class="big-btn danger">J'ACCUSE!</button>
+            <button id="acc-cancel" class="big-btn">Not yet…</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== END SCREEN ===== -->
+      <div id="end-modal" class="modal hidden">
+        <div class="modal-inner box">
+          <div class="box-title" id="end-title">CASE CLOSED</div>
+          <div id="end-body"></div>
+          <button id="play-again" class="big-btn">&gt; NEW CASE</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

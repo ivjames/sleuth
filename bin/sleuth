@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Operate CLI for the Sleuth site — matches the lab980 one-dir-per-site shape.
+#   sleuth deploy   git pull -> install -> restart under pm2
+#   sleuth restart  restart the pm2 process
+#   sleuth logs     tail the pm2 logs
+#   sleuth test     run the game's test suite
+#   sleuth start    start under pm2 (first run)
+set -euo pipefail
+
+APP="sleuth"
+DIR="/var/www/sleuth"
+PORT="${PORT:-8065}"
+
+# resolve DIR to the repo this script lives in when not on the droplet
+if [[ ! -d "$DIR" ]]; then
+  DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+fi
+cd "$DIR"
+
+cmd="${1:-help}"
+case "$cmd" in
+  deploy)
+    git pull --ff-only
+    npm ci --omit=dev 2>/dev/null || npm install --omit=dev || true
+    pm2 restart "$APP" --update-env || PORT="$PORT" pm2 start server.js --name "$APP"
+    pm2 save
+    echo "Deployed $APP on port $PORT."
+    ;;
+  start)
+    PORT="$PORT" pm2 start server.js --name "$APP"
+    pm2 save
+    ;;
+  restart)
+    pm2 restart "$APP" --update-env
+    ;;
+  logs)
+    pm2 logs "$APP" --lines "${2:-80}"
+    ;;
+  test)
+    npm test
+    ;;
+  *)
+    echo "usage: sleuth {deploy|start|restart|logs|test}"
+    ;;
+esac
