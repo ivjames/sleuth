@@ -146,7 +146,14 @@ html, body {
 }
 
 /* ---- Map ---- */
-#map { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+#map { display: flex; gap: 14px; align-items: flex-start; }
+.floor { flex: 1; min-width: 0; }
+/* the gap between the two floors is the "break" between storeys */
+.floor + .floor { border-left: 1px dashed var(--border); padding-left: 14px; }
+.floor-label { color: var(--amber-dim); font-size: 10px; letter-spacing: 2px; text-align: center; margin-bottom: 4px; }
+.floor-label.active { color: var(--cyan); }
+.floor-grid { display: grid; gap: 4px; }
+.stair { color: var(--cyan); }
 .cell {
   border: 1px solid var(--border);
   aspect-ratio: 1 / 0.72;

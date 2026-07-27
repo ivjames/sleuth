@@ -38,12 +38,26 @@ name a "witness." But that witness never places them there. So the murderer is
 the **unique guest whose alibi no one confirms**. Question the guests, watch
 the notebook, and find the liar.
 
-This invariant is checked over 24,000 randomized cases in
-`test/solvable.test.js`.
+This invariant is checked in `test/solvable.test.js`.
+
+### The house (one story or two)
+
+As in the original, each game is set in one of two houses, **chosen at random**:
+
+- a sprawling **single-story estate** — one 4×4 grid of rooms, and
+- a **two-story mansion** — two floors (Ground and Upper) drawn side by side
+  with a break between them, joined by **staircases** at opposite corners.
+
+Both hold sixteen rooms. On the two-story map you move within a floor with the
+usual N/S/E/W and cross between floors on the stairs (**UP** / **DOWN**, or just
+click the linked room across the break). The murder can happen on either floor,
+and the guests roam between floors too. The solvability test also checks that
+every room is reachable from the front door — including across the stairs.
 
 ## How to play
 
 - **Move**: arrow keys, `N`/`S`/`E`/`W`, or click an adjoining room on the map.
+  In a two-story house, **`UP`**/**`DOWN`** take the stairs between floors.
 - **`TAKE glass`**: pick up the magnifying glass (required before you can examine clues).
 - **`EXAMINE`**: inspect the clue in the current room (or click the object).
 - **`QUESTION <name>`**: ask a guest for their alibi (or click a guest). **Don't over-ask** — the murderer notices.
@@ -78,7 +92,7 @@ test/        headless solvability + Playwright browser tests
 
 ```
 npm test                       # runs both suites
-node test/solvable.test.js     # 24k cases: every case uniquely solvable
+node test/solvable.test.js     # 20k cases: uniquely solvable + mansion well-formed
 node test/browser.smoke.js     # Playwright: win path + death path, 0 console errors
 ```
 

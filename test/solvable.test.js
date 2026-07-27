@@ -3,7 +3,7 @@
    witness they name never places them at the scene of their claimed alibi.
    Run: node test/solvable.test.js
 */
-const { newGame, getG, ROOMS } = require('../game.js');
+const { newGame, getG, getRooms, getAdj, getFloors, getMeta } = require('../game.js');
 
 function corroborators(G, name) {
   // who claims to have been in the SAME room AND names `name`?
@@ -61,6 +61,22 @@ for (const set of NAME_SETS) {
     // 5) the weapon is discoverable (a weapon object exists, or it is at the scene)
     const hasWeaponObj = Object.values(G.objects).some(o => o.kind === 'weapon') || G.weaponAtScene;
     if (!hasWeaponObj) { fails++; console.error('FAIL: weapon not discoverable'); continue; }
+
+    // 6) the mansion is well-formed: 16 rooms, and every room is REACHABLE from
+    //    the entrance (index 0) via N/S/E/W/U/D — no room is stranded, even on
+    //    the far floor of a two-story house (stairs must connect the floors).
+    const ROOMS = getRooms(), ADJ = getAdj(), FLOORS = getFloors(), META = getMeta();
+    if (ROOMS.length !== 16) { fails++; console.error('FAIL: expected 16 rooms, got', ROOMS.length); continue; }
+    const seen = new Set([0]), stack = [0];
+    while (stack.length) { const cur = stack.pop(); for (const nxt of Object.values(ADJ[cur])) if (!seen.has(nxt)) { seen.add(nxt); stack.push(nxt); } }
+    if (seen.size !== ROOMS.length) { fails++; console.error('FAIL: unreachable rooms', ROOMS.length - seen.size, 'stories', G.stories); continue; }
+
+    // two-story houses must actually have working stairs (U/D links)
+    if (G.stories === 2) {
+      if (FLOORS.length !== 2) { fails++; console.error('FAIL: two-story but', FLOORS.length, 'floors'); continue; }
+      const hasStairs = META.some(m => m.stair) && ADJ.some(a => a.U != null) && ADJ.some(a => a.D != null);
+      if (!hasStairs) { fails++; console.error('FAIL: two-story house has no stairs'); continue; }
+    } else if (FLOORS.length !== 1) { fails++; console.error('FAIL: one-story but', FLOORS.length, 'floors'); continue; }
   }
 }
 

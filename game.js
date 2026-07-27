@@ -2,8 +2,9 @@
    SLEUTH — A Murder Mystery
    A browser clone of Eric N. Miller's 1983 DOS whodunit (Norland Software).
 
-   The case is randomized every game: murderer, weapon, room, victim, and the
-   location of the magnifying glass. You solve it by:
+   The case is randomized every game: murderer, weapon, room, victim, the house
+   (a one-story estate or a two-story mansion with stairs), and the location of
+   the magnifying glass. You solve it by:
      • finding the bloodstains-> reveals the ROOM (a guest may be staring at
                                  the floor there — usually, but not always)
      • finding the weapon     -> reveals the WEAPON (examine needs the glass)
@@ -19,13 +20,71 @@
    Static data
    -------------------------------------------------------------------------- */
 
-const ROOMS = [
-  'Foyer',      'Library',       'Study',         'Conservatory',
-  'Living Room','Dining Room',   'Billiard Room', 'Gallery',
-  'Kitchen',    'Ballroom',      'Trophy Room',   'Music Room',
-  'Wine Cellar','Master Bedroom','Guest Room',    'Garden',
-];
-const GRID_W = 4, GRID_H = 4;
+// Room-name pools. As in the original, each game is played in one of two houses,
+// chosen at random: a sprawling SINGLE-story estate, or a TWO-story mansion whose
+// floors sit side by side with a break between them, joined by staircases. We
+// keep the simple grid navigation either way — a one-story game is one 4×4 grid;
+// a two-story game is two 4×2 grids (ground + upper) linked by stairs.
+const GROUND_ROOMS = ['Foyer','Living Room','Dining Room','Kitchen','Library','Study','Conservatory','Billiard Room'];
+const UPPER_ROOMS  = ['Master Bedroom','Guest Room','Nursery','Bathroom','Gallery','Trophy Room','Music Room','Balcony'];
+
+// The current game's mansion, (re)built by buildMansion() at the start of each
+// game. Rooms have a stable global index; ROOMS[i] is the name, ADJ[i] maps a
+// direction (N/S/E/W within a floor, U/D via stairs) to the neighbouring index.
+let ROOMS = [];          // global index -> room name
+let ADJ = [];            // global index -> { N,S,E,W,U,D: index }
+let FLOORS = [];         // render metadata -> [{ name, w, h, cells:[globalIdx...] }]
+let ROOM_META = [];      // global index -> { floor, r, c, stair:bool }
+let STORIES = 1;
+
+function buildMansion(stories) {
+  ROOMS = []; ADJ = []; FLOORS = []; ROOM_META = []; STORIES = stories;
+
+  const floorDefs = stories === 2
+    ? [ { name: 'Ground Floor', w: 4, h: 2, names: GROUND_ROOMS },
+        { name: 'Upper Floor',  w: 4, h: 2, names: UPPER_ROOMS } ]
+    : [ { name: '',             w: 4, h: 4, names: [...GROUND_ROOMS, ...UPPER_ROOMS] } ];
+
+  // lay out each floor row-major, assigning stable global indices
+  floorDefs.forEach((f, fi) => {
+    const cells = [];
+    for (let r = 0; r < f.h; r++) for (let c = 0; c < f.w; c++) {
+      const gi = ROOMS.length;
+      ROOMS.push(f.names[r * f.w + c]);
+      ADJ.push({});
+      ROOM_META.push({ floor: fi, r, c, stair: false });
+      cells.push(gi);
+    }
+    FLOORS.push({ name: f.name, w: f.w, h: f.h, cells });
+  });
+
+  // grid adjacency within each floor
+  FLOORS.forEach(f => {
+    const at = (r, c) => f.cells[r * f.w + c];
+    for (let r = 0; r < f.h; r++) for (let c = 0; c < f.w; c++) {
+      const gi = at(r, c);
+      if (r > 0)        ADJ[gi].N = at(r - 1, c);
+      if (r < f.h - 1)  ADJ[gi].S = at(r + 1, c);
+      if (c > 0)        ADJ[gi].W = at(r, c - 1);
+      if (c < f.w - 1)  ADJ[gi].E = at(r, c + 1);
+    }
+  });
+
+  // staircases join the two floors at opposite corners ("from one side to the other")
+  if (stories === 2) {
+    const g = FLOORS[0], u = FLOORS[1];
+    const links = [
+      [g.cells[0 * g.w + (g.w - 1)], u.cells[0 * u.w + 0]],                    // ground top-right  <-> upper top-left
+      [g.cells[(g.h - 1) * g.w + 0], u.cells[(u.h - 1) * u.w + (u.w - 1)]],     // ground bottom-left <-> upper bottom-right
+    ];
+    links.forEach(([gi, ui]) => {
+      ADJ[gi].U = ui; ADJ[ui].D = gi;               // U = up to the upper floor, D = down to the ground floor
+      ROOM_META[gi].stair = ROOM_META[ui].stair = true;
+    });
+  }
+}
+
+const DIR_WORD = { N: 'north', S: 'south', E: 'east', W: 'west', U: 'upstairs', D: 'downstairs' };
 
 // There is no body — the murder room is betrayed by what it leaves on the floor.
 // `scene` is what a close look at the stains reveals; `klass` is the category it
@@ -82,17 +141,9 @@ function sceneNoun(weapon) {
 const rnd     = n => Math.floor(Math.random() * n);
 const pick    = arr => arr[rnd(arr.length)];
 const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-const rc      = i => [Math.floor(i / GRID_W), i % GRID_W];
-const idx     = (r, c) => r * GRID_W + c;
 
-function neighbors(i) {
-  const [r, c] = rc(i), out = {};
-  if (r > 0)          out.N = idx(r - 1, c);
-  if (r < GRID_H - 1) out.S = idx(r + 1, c);
-  if (c > 0)          out.W = idx(r, c - 1);
-  if (c < GRID_W - 1) out.E = idx(r, c + 1);
-  return out;
-}
+// direction -> neighbouring room index, for the current mansion (N/S/E/W + stairs)
+const neighbors = i => ADJ[i] || {};
 const $ = sel => document.querySelector(sel);
 
 /* --------------------------------------------------------------------------
@@ -117,6 +168,9 @@ function newGame(names, diffKey) {
 
   const victim   = pick(guests);                     // one of the eight is the deceased
   let suspects   = guests.filter(n => n !== victim); // the remaining seven are suspects
+
+  // Pick the house at random: a one-story estate or a two-story mansion.
+  buildMansion(Math.random() < 0.5 ? 2 : 1);
 
   const murderRoom = rnd(ROOMS.length);
   const weapon     = pick(WEAPONS);
@@ -186,10 +240,11 @@ function newGame(names, diffKey) {
 
   G = {
     diff, diffKey,
+    stories: STORIES,        // 1 or 2 — the house drawn this game
     suspects, murdererName, weapon, victim,
     murderRoom, weaponRoom, weaponAtScene, glassRoom,
     people, objects, positions,
-    player: 0,               // player's room
+    player: 0,               // player's room (index 0 = the entrance / front door)
     hasGlass: false,
     turnsLeft: diff.turns,
     suspicion: 0,
@@ -226,26 +281,44 @@ function log(text, cls = 'evt') {
 }
 
 function renderMap() {
-  const adj = neighbors(G.player);
-  const adjSet = new Set(Object.values(adj));
+  const adjSet = new Set(Object.values(neighbors(G.player)));
   const map = $('#map');
   map.innerHTML = '';
-  ROOMS.forEach((name, i) => {
-    const cell = document.createElement('div');
-    cell.className = 'cell' + (i === G.player ? ' here' : (adjSet.has(i) ? ' adj' : ''));
-    const marks = G.markers[i] ? [...G.markers[i]].join(' ') : '';
-    const you = i === G.player ? '@' : '';
-    cell.innerHTML = `<div class="cell-mark">${you || marks || '&nbsp;'}</div><div>${name}</div>`;
-    cell.onclick = () => { if (adjSet.has(i)) moveTo(i); else if (i === G.player) doLook(); };
-    map.appendChild(cell);
+  FLOORS.forEach(f => {
+    const wrap = document.createElement('div');
+    wrap.className = 'floor';
+    if (f.name) {
+      const label = document.createElement('div');
+      label.className = 'floor-label' + (ROOM_META[G.player].floor === FLOORS.indexOf(f) ? ' active' : '');
+      label.textContent = f.name;
+      wrap.appendChild(label);
+    }
+    const grid = document.createElement('div');
+    grid.className = 'floor-grid';
+    grid.style.gridTemplateColumns = `repeat(${f.w}, 1fr)`;
+    f.cells.forEach(i => {
+      const cell = document.createElement('div');
+      const here = i === G.player, adj = adjSet.has(i);
+      cell.className = 'cell' + (here ? ' here' : (adj ? ' adj' : ''));
+      const marks = G.markers[i] ? [...G.markers[i]].join(' ') : '';
+      const stair = ROOM_META[i].stair ? '<span class="stair">↕</span>' : '';
+      const you = here ? '@' : '';
+      cell.innerHTML = `<div class="cell-mark">${you || [marks, stair].filter(Boolean).join(' ') || '&nbsp;'}</div><div>${ROOMS[i]}</div>`;
+      cell.onclick = () => { if (adj) moveTo(i); else if (here) doLook(); };
+      grid.appendChild(cell);
+    });
+    wrap.appendChild(grid);
+    map.appendChild(wrap);
   });
 }
 
 function renderRoom() {
   const i = G.player;
-  $('#room-title').textContent = ROOMS[i].toUpperCase();
+  const meta = ROOM_META[i];
+  const floorName = (G.stories === 2 && FLOORS[meta.floor].name) ? ` <span class="dim">(${FLOORS[meta.floor].name})</span>` : '';
+  $('#room-title').innerHTML = ROOMS[i].toUpperCase() + floorName;
   const adj = neighbors(i);
-  const dirs = Object.keys(adj).map(d => ({ N:'north', S:'south', E:'east', W:'west' }[d])).join(', ');
+  const dirs = Object.keys(adj).map(d => DIR_WORD[d]).join(', ');
   $('#room-desc').innerHTML = `You are in the <span class="hl">${ROOMS[i]}</span>. ` +
     `Exits lead <span class="cyan">${dirs}</span>.`;
 
@@ -343,9 +416,11 @@ function moveTo(target) {
   if (G.over) return;
   const adj = Object.values(neighbors(G.player));
   if (!adj.includes(target)) { log('You can only move to an adjoining room.', 'sys'); return; }
+  const changedFloor = ROOM_META[target].floor !== ROOM_META[G.player].floor;
   G.player = target;
   G.visited.add(target);
-  log(`You move into the <span class="hl">${ROOMS[target]}</span>.`, 'you');
+  if (changedFloor) log(`You take the stairs to the <span class="hl">${ROOMS[target]}</span> <span class="dim">(${FLOORS[ROOM_META[target].floor].name})</span>.`, 'you');
+  else log(`You move into the <span class="hl">${ROOMS[target]}</span>.`, 'you');
   // A guest lingering at the scene often — but not always — gives it away by
   // staring at the floor. (You can also just spot the stains yourself: EXAMINE.)
   if (target === G.murderRoom && !G.knownRoom) {
@@ -359,7 +434,10 @@ function moveTo(target) {
 
 function moveDir(d) {
   const adj = neighbors(G.player);
-  if (adj[d] == null) { log(`There is no exit to the ${ {N:'north',S:'south',E:'east',W:'west'}[d] }.`, 'sys'); return; }
+  if (adj[d] == null) {
+    if ((d === 'U' || d === 'D')) { log('There are no stairs in this room.', 'sys'); return; }
+    log(`There is no exit to the ${DIR_WORD[d]}.`, 'sys'); return;
+  }
   moveTo(adj[d]);
 }
 
@@ -495,7 +573,11 @@ function openAccuse() {
   const s = $('#acc-suspect'), w = $('#acc-weapon'), r = $('#acc-room');
   s.innerHTML = G.suspects.map(n => `<option>${n}</option>`).join('');
   w.innerHTML = WEAPONS.map(x => `<option>${x.name}</option>`).join('');
-  r.innerHTML = ROOMS.map(n => `<option>${n}</option>`).join('');
+  // value stays the plain room name (unique across floors); label notes the floor
+  r.innerHTML = ROOMS.map((n, i) => {
+    const fl = (G.stories === 2 && FLOORS[ROOM_META[i].floor].name) ? ` — ${FLOORS[ROOM_META[i].floor].name}` : '';
+    return `<option value="${n}">${n}${fl}</option>`;
+  }).join('');
   if (G.knownWeapon) w.value = G.knownWeapon;
   if (G.knownRoom)   r.value = G.knownRoom;
   $('#accuse-modal').classList.remove('hidden');
@@ -565,9 +647,12 @@ function runCommand(raw) {
     case 's': case 'south': return moveDir('S');
     case 'e': case 'east':  return moveDir('E');
     case 'w': case 'west':  return moveDir('W');
+    case 'u': case 'up': case 'upstairs':     return moveDir('U');
+    case 'd': case 'down': case 'downstairs': return moveDir('D');
     case 'go': case 'move': {
-      const d = { north:'N', south:'S', east:'E', west:'W', n:'N', s:'S', e:'E', w:'W' }[arg.toLowerCase()];
-      return d ? moveDir(d) : log('Go where? Try: GO NORTH / SOUTH / EAST / WEST.', 'sys');
+      const d = { north:'N', south:'S', east:'E', west:'W', up:'U', down:'D', upstairs:'U', downstairs:'D',
+                  n:'N', s:'S', e:'E', w:'W', u:'U' }[arg.toLowerCase()];
+      return d ? moveDir(d) : log('Go where? Try: GO NORTH / SOUTH / EAST / WEST / UP / DOWN.', 'sys');
     }
     case 'l': case 'look': return doLook();
     case 'x': case 'examine': case 'search': case 'inspect': {
@@ -606,6 +691,7 @@ function showHelp() {
   log('<span class="cyan">— COMMANDS —</span>', 'clue');
   [
     'Move:      N / S / E / W  (or arrow keys, or click an adjoining room)',
+    'UP / DOWN  — take the stairs between floors (two-story houses only)',
     'LOOK       — describe the current room',
     'TAKE glass — pick up the magnifying glass',
     'EXAMINE    — inspect the clue in this room (bloodstains reveal the ROOM; the glass reveals more)',
@@ -631,15 +717,19 @@ function startGame() {
   $('#end-modal').classList.add('hidden');
   $('#log').innerHTML = '';
 
-  log(`<span class="clue">A scream echoes through the mansion. ${G.victim} has been murdered — the body already spirited away, but the killer left their mark on the floor of one room.</span>`);
+  const house = G.stories === 2
+    ? 'a <span class="hl">two-story mansion</span> — its ground and upper floors linked by staircases'
+    : 'a sprawling <span class="hl">single-story estate</span>';
+  log(`<span class="clue">A scream echoes through ${house}. ${G.victim} has been murdered — the body already spirited away, but the killer left their mark on the floor of one room.</span>`);
   log(`The guests — <span class="cyan">${G.suspects.join(', ')}</span> — are all still here. One of them is the murderer.`);
+  if (G.stories === 2) log(`Rooms sit on two floors; use the <span class="cyan">stairs</span> (UP / DOWN, or click across) to move between them.`, 'sys');
   log(`Find the bloodstained room, find the weapon, and unmask the liar before your time runs out. Type <span class="cyan">HELP</span> to begin.`);
   renderAll();
   $('#cmd-input').focus();
 
   // test-only hook (opt-in via ?sleuthtest in the URL) — never active in normal play
   if (typeof location !== 'undefined' && location.search.includes('sleuthtest')) {
-    window.__sleuth = { get G() { return G; }, ROOMS, confirmAccuse };
+    window.__sleuth = { get G() { return G; }, get ROOMS() { return ROOMS; }, get FLOORS() { return FLOORS; }, confirmAccuse };
   }
 }
 
@@ -700,5 +790,8 @@ if (typeof document !== 'undefined') {
 
 // Exposed for headless testing (see test/solvable.test.js)
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { newGame, getG: () => G, ROOMS, WEAPONS, neighbors };
+  module.exports = {
+    newGame, getG: () => G, WEAPONS, neighbors,
+    getRooms: () => ROOMS, getAdj: () => ADJ, getFloors: () => FLOORS, getMeta: () => ROOM_META,
+  };
 }
