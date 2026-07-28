@@ -36,9 +36,14 @@ async function startGame(browser, errors) {
   return page;
 }
 
-async function accuse(page, { who, weapon, room }) {
-  await page.click('button[data-cmd="accuse"]');
+async function openAccuse(page) {
+  await page.fill('#cmd-input', 'accuse');
+  await page.press('#cmd-input', 'Enter');
   await page.waitForSelector('#accuse-modal:not(.hidden)');
+}
+
+async function accuse(page, { who, weapon, room }) {
+  await openAccuse(page);
   await page.selectOption('#acc-suspect', who);
   await page.selectOption('#acc-weapon', weapon);
   await page.selectOption('#acc-room', room);
@@ -60,14 +65,12 @@ async function accuse(page, { who, weapon, room }) {
     await page.fill('#cmd-input', cmd);
     await page.press('#cmd-input', 'Enter');
   }
-  const counts = await page.evaluate(() => {
-    document.querySelector('button[data-cmd="accuse"]').click();
-    return {
-      suspects: document.querySelectorAll('#acc-suspect option').length,
-      weapons:  document.querySelectorAll('#acc-weapon option').length,
-      rooms:    document.querySelectorAll('#acc-room option').length,
-    };
-  });
+  await openAccuse(page);
+  const counts = await page.evaluate(() => ({
+    suspects: document.querySelectorAll('#acc-suspect option').length,
+    weapons:  document.querySelectorAll('#acc-weapon option').length,
+    rooms:    document.querySelectorAll('#acc-room option').length,
+  }));
   await page.click('#acc-cancel');
 
   // ----- 2. CORRECT accusation => WIN -----

@@ -51,39 +51,20 @@
         <button id="start-btn" class="big-btn">&gt; BEGIN INVESTIGATION</button>
       </section>
 
-      <!-- ===== GAME SCREEN — one narrow terminal column ===== -->
+      <!-- ===== GAME SCREEN — map, a few lines of text, a prompt. That's all. ===== -->
       <section id="game-screen" class="panel hidden">
-        <!-- one-line status bar -->
-        <div id="statusbar"></div>
-
-        <!-- the floorplan: you are the yellow smiley, guests the inverted ones -->
+        <!-- the floorplan -->
         <div id="map"></div>
 
-        <!-- current room: title, who's here, what's here -->
-        <div id="room-line">
-          <span id="room-title"></span>
-          <span id="room-desc"></span>
-        </div>
-        <div id="room-occupants"></div>
-        <div id="room-objects"></div>
-
-        <!-- message log -->
+        <!-- the last few lines of narrative: descriptions, dialogue, actions -->
         <div id="log"></div>
 
-        <!-- command line -->
+        <!-- command line (with a small time/suspicion readout on the right) -->
         <div id="prompt-row">
           <span class="prompt-caret">&gt;</span>
           <input id="cmd-input" type="text" spellcheck="false" autocomplete="off"
-                 placeholder="arrow keys move  ·  type a command (HELP)">
-        </div>
-
-        <!-- compact actions -->
-        <div id="quick-actions">
-          <button data-cmd="look">Look</button>
-          <button data-cmd="examine">Examine</button>
-          <button data-cmd="question">Question</button>
-          <button data-cmd="accuse" class="danger">Accuse</button>
-          <button data-cmd="help">Help</button>
+                 placeholder="type a command — arrows move, HELP for the list">
+          <span id="status"></span>
         </div>
       </section>
 

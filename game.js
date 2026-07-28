@@ -30,7 +30,6 @@ const MAP = [
   "█      ▐    ▌               ▌          █",
   "█           ▙▄▄▄▄▄▄  ▄▄▄▄▄▄▄▌   ▌      █",
   "█      ▐                        ▙▄▄▄▄▄▄█",
-  "█      ▐                        ▌      █",
   "█▀▀▀▀▀▀▜    ▛▀▀▀▀▀▀▌ ▛▀▀▀▀▀▜    ▌      █",
   "█      ▐           ▌ ▌     ▐           █",
   "█▄▄▄▄▄▄▟    ▙▄▄▄▄▄▄▌ ▌     ▐    ▌      █",
@@ -47,12 +46,12 @@ const MAPW = 40, MAPH = MAP.length;
 // joins the nearest centre it can actually walk to. The Sewing Room sits behind
 // sealed walls with no doorway — only the SECRET PASSAGE reaches it.
 const ZONE_DEFS = [
-  ['Parlor', 3, 3], ['Sewing Room', 3, 7], ['Study', 3, 11],
-  ['West Hall', 9, 5], ['Grand Foyer', 20, 1], ['Dining Hall', 16, 7],
-  ['Ballroom', 24, 10], ['Music Room', 16, 12], ['East Hall', 29, 6],
-  ['Master Bedroom', 35, 2], ['Bathroom', 35, 6], ['Kitchen', 35, 11],
+  ['Parlor', 3, 3], ['Sewing Room', 3, 6], ['Study', 3, 11],
+  ['West Hall', 9, 4], ['Grand Foyer', 20, 1], ['Dining Hall', 16, 6],
+  ['Ballroom', 24, 9], ['Music Room', 16, 11], ['East Hall', 29, 5],
+  ['Master Bedroom', 35, 2], ['Bathroom', 35, 5], ['Kitchen', 35, 10],
 ];
-const START_TILE = { x: 9, y: 13 };   // you begin at the front door (left stair)
+const START_TILE = { x: 9, y: 12 };   // you begin at the front door (left stair)
 const SEALED_ROOM = 1;                 // Sewing Room — reached only by the passage
 
 // Room flavour, drawn from the original's own descriptions where we have them.
@@ -379,15 +378,21 @@ function renderMap() {
   const map = $('#map');
   map.innerHTML = '';
 
-  // overlays: guests (their initial) placed within their current room, then you
+  // overlays: you, plus any guests who share YOUR room (guests elsewhere aren't
+  // shown — as in the original, you only see who's here once you walk in). Spread
+  // them across the room's free floor tiles so they never stack on one cell.
   const overlay = {};
-  const perRoom = {};
-  G.suspects.forEach(n => {
-    const ri = G.positions[n], m = ROOM_META[ri];
-    const off = (perRoom[ri] = (perRoom[ri] || 0) + 1) - 1;
-    const gx = m.center.x + (off % 2), gy = m.center.y + ((off / 2) | 0);
-    overlay[gy + ',' + gx] = { ch: FACE_NPC, cls: 'g-guest' };   // anonymous guest face
-  });
+  const f0 = FLOORS[0];
+  const here = G.suspects.filter(n => G.positions[n] === G.player);
+  if (here.length) {
+    const spots = [];
+    for (let y = 0; y < f0.H; y++) for (let x = 0; x < f0.W; x++)
+      if (f0.owner[y][x] === G.player && !(x === G.px && y === G.py)) spots.push([x, y]);
+    here.forEach((n, i) => {
+      const t = spots.length ? spots[Math.floor(((i + 0.5) * spots.length) / here.length)] : [G.px, G.py];
+      overlay[t[1] + ',' + t[0]] = { ch: FACE_NPC, cls: 'g-guest' };
+    });
+  }
   overlay[G.py + ',' + G.px] = { ch: FACE_YOU, cls: 'g-you' };   // you
   // open-passage endpoints show a '=' where you can slip through
   const P = G.passage;
@@ -427,74 +432,41 @@ function renderMap() {
   });
 }
 
-function renderRoom() {
+// The room description now goes into the narrative flow (no side panel). Prints
+// the room + flavour, who's here, and what you notice — a few lines, as the
+// original did. Called on entering a room and on LOOK.
+function describeRoom() {
   const i = G.player;
-  $('#room-title').innerHTML = ROOMS[i].toUpperCase();
-  const adj = neighbors(i);
-  const dirs = Object.keys(adj).filter(d => DIR_WORD[d]).map(d => DIR_WORD[d]).join(', ') || 'nowhere obvious';
-  const flavor = ROOM_FLAVOR[ROOMS[i]] ? ` ${ROOM_FLAVOR[ROOMS[i]]}` : '';
-  let desc = `You are in the <span class="hl">${ROOMS[i]}</span>.${flavor} Exits lead <span class="cyan">${dirs}</span>.`;
-  // secret-passage hint / exit
+  const flavor = ROOM_FLAVOR[ROOMS[i]] || '';
+  log(`<span class="hl">${ROOMS[i]}.</span> ${flavor}`, 'evt');
+
   const P = G.passage;
-  if (i === P.panelRoom && !P.found) desc += ` The wallpaper's repeating pattern doesn't quite line up in one corner… <span class="dim">(SEARCH it.)</span>`;
-  if (P.found && (i === P.panelRoom || i === P.exitRoom)) desc += ` A <span class="clue">secret passage</span> opens from here. <span class="dim">(PASSAGE)</span>`;
-  $('#room-desc').innerHTML = desc;
+  if (i === P.panelRoom && !P.found) log(`In one corner the wallpaper's pattern doesn't quite line up. <span class="dim">(SEARCH)</span>`, 'clue');
+  if (P.found && (i === P.panelRoom || i === P.exitRoom)) log(`A <span class="clue">secret passage</span> stands open here. <span class="dim">(PASSAGE)</span>`, 'clue');
 
-  // occupants
   const here = G.suspects.filter(n => G.positions[n] === i);
-  const occ = $('#room-occupants');
-  if (here.length) {
-    occ.innerHTML = `<span class="field-label">Present:</span><br>` +
-      here.map(n => `<span class="chip person" data-q="${enc(n)}">${n}</span>`).join('');
-  } else {
-    occ.innerHTML = `<span class="field-label">No one else is here.</span>`;
-  }
+  if (here.length) log(`With you: <span class="cyan">${here.join(', ')}</span>. <span class="dim">(QUESTION a name)</span>`);
 
-  // objects
+  if (i === G.glassRoom && !G.hasGlass) log(`A <span class="clue">magnifying glass</span> glints on a table. <span class="dim">(TAKE glass)</span>`, 'clue');
   const obj = G.objects[i];
-  const objBox = $('#room-objects');
-  let html = '';
-  if (i === G.glassRoom && !G.hasGlass) {
-    html += `<span class="chip object" data-take="glass">✦ a magnifying glass</span>`;
-  }
   if (obj) {
-    const label = obj.kind === 'weapon' && obj.examined ? `⚔ ${G.knownWeapon} (bloodied)` :
-                  obj.kind === 'blood'  ? `<span class="bad">✖</span> ${obj.label}` : obj.label;
-    html += `<span class="chip object" data-x="${i}">${label}</span>`;
+    const label = obj.kind === 'weapon' && obj.examined ? `the bloodied ${G.knownWeapon}`
+                : obj.kind === 'blood' ? obj.label : obj.label;
+    log(`You notice <span class="clue">${label}</span>. <span class="dim">(EXAMINE)</span>`, 'clue');
   }
-  if (i === P.panelRoom && !P.found) html += `<span class="chip object" data-search="1">▤ the odd patch of wallpaper</span>`;
-  if (P.found && (i === P.panelRoom || i === P.exitRoom)) html += `<span class="chip object" data-passage="1"><span class="g-pass">=</span> the secret passage</span>`;
-  objBox.innerHTML = html ? `<span class="field-label">You notice:</span><br>${html}` : '';
-
-  // wire chips
-  occ.querySelectorAll('[data-q]').forEach(c => c.onclick = () => questionPerson(dec(c.dataset.q)));
-  objBox.querySelectorAll('[data-take]').forEach(c => c.onclick = () => takeGlass());
-  objBox.querySelectorAll('[data-x]').forEach(c => c.onclick = () => examineObject(+c.dataset.x));
-  objBox.querySelectorAll('[data-search]').forEach(c => c.onclick = () => searchWalls());
-  objBox.querySelectorAll('[data-passage]').forEach(c => c.onclick = () => takePassage());
 }
 
-// One compact status line across the top (was a whole panel).
+// A tiny time/suspicion readout tucked beside the prompt — no panel.
 function renderStatus() {
-  const bar = $('#statusbar'); if (!bar) return;
+  const el = $('#status'); if (!el) return;
   const t = G.turnsLeft;
   const tcls = t <= 5 ? 'bad' : t <= 12 ? 'evt' : 'good';
-  const susp = '▓'.repeat(G.suspicion) + '░'.repeat(Math.max(0, G.diff.suspThreshold - G.suspicion));
-  const scls = G.suspicion >= G.diff.suspThreshold - 1 ? 'bad' : 'cyan';
-  const parts = [
-    `<span class="dim">moves</span> <span class="meter ${tcls}">${t}</span>`,
-    `<span class="dim">suspicion</span> <span class="${scls}">${susp}</span>${G.hunting ? ' <span class="bad">HUNTED!</span>' : ''}`,
-    `<span class="dim">glass</span> ${G.hasGlass ? '<span class="good">✓</span>' : '<span class="dim">✗</span>'}`,
-    `<span class="dim">room</span> ${G.knownRoom ? `<span class="good">${G.knownRoom}</span>` : '<span class="dim">?</span>'}`,
-    `<span class="dim">weapon</span> ${G.knownWeapon ? `<span class="good">${G.knownWeapon}</span>` : (G.woundHint ? `<span class="cyan">${G.woundHint}?</span>` : '<span class="dim">?</span>')}`,
-  ];
-  bar.innerHTML = parts.join('<span class="sep">·</span>');
+  el.innerHTML = `<span class="${tcls}">${t}</span> moves` + (G.hunting ? ' <span class="bad">· HUNTED</span>' : '');
 }
 
-// Notebook is command-driven now (see dumpNotebook); no always-on panel.
-function renderNotebook() {}
+function renderNotebook() {}   // notebook is the typed NOTEBOOK command
 
-function renderAll() { renderMap(); renderRoom(); renderStatus(); renderNotebook(); }
+function renderAll() { renderMap(); renderStatus(); }
 
 const enc = s => encodeURIComponent(s);
 const dec = s => decodeURIComponent(s);
@@ -549,12 +521,10 @@ function stepDir(dx, dy) {
 
 // Arriving in a new room: the turn-costing event (also used by stairs/passage).
 function enterRoom(target, via) {
-  const changedFloor = ROOM_META[target].floor !== ROOM_META[G.player].floor;
   G.player = target;
   G.visited.add(target);
-  if (via === 'passage') log(`You emerge from the secret passage into the <span class="hl">${ROOMS[target]}</span>${G.stories === 2 ? ` <span class="dim">(${FLOORS[ROOM_META[target].floor].name})</span>` : ''}.`, 'you');
-  else if (via === 'stairs' || changedFloor) log(`You take the stairs to the <span class="hl">${ROOMS[target]}</span> <span class="dim">(${FLOORS[ROOM_META[target].floor].name})</span>.`, 'you');
-  else log(`You enter the <span class="hl">${ROOMS[target]}</span>.`, 'you');
+  if (via === 'passage') log(`You slip out of the passage into the <span class="hl">${ROOMS[target]}</span>.`, 'you');
+  describeRoom();
   // A guest lingering at the scene often — but not always — gives it away by
   // staring at the floor. (You can also just spot the stains yourself: EXAMINE.)
   if (target === G.murderRoom && !G.knownRoom) {
@@ -637,16 +607,10 @@ function moveDir(d) {
 }
 
 function doLook() {
+  describeRoom();
   const i = G.player;
-  log(`You survey the <span class="hl">${ROOMS[i]}</span>.`, 'you');
   const here = G.suspects.filter(n => G.positions[n] === i);
-  if (here.length) log(`Here with you: <span class="cyan">${here.join(', ')}</span>.`);
-  else log('You are alone in this room.', 'sys');
-  const obj = G.objects[i];
-  if (i === G.glassRoom && !G.hasGlass) log('A <span class="clue">magnifying glass</span> glints on a side table. (TAKE it.)', 'clue');
-  if (obj) log(`You notice <span class="clue">${obj.label}</span>. (EXAMINE it.)`, 'clue');
-  if (!obj && !(i === G.glassRoom && !G.hasGlass)) log('Nothing here seems important.', 'sys');
-  // looking is free the first time per room, else costs a move? keep it free but roam anyway lightly
+  if (!here.length && !G.objects[i] && !(i === G.glassRoom && !G.hasGlass)) log('Nothing else here catches your eye.', 'sys');
 }
 
 function takeGlass() {
@@ -915,7 +879,8 @@ function startGame() {
 
   log(`<span class="clue">It is a dark and stormy night. A scream echoes through a sprawling <span class="hl">single-story estate</span>. ${G.victim} has been murdered — the body already spirited away by persons unknown, but the killer left their mark on the floor of one room.</span>`);
   log(`The guests — <span class="cyan">${G.suspects.join(', ')}</span> — are all still here. One of them is the murderer.`);
-  log(`On the map you are the <span class="hl">yellow face</span>; the guests are the <span class="hl">cyan faces</span>. Walk with the <span class="cyan">arrow keys</span>, find the bloodstained room and the weapon, and unmask the liar before your time runs out. Type <span class="cyan">HELP</span> to begin.`);
+  log(`You are the <span class="hl">yellow face</span>; walk with the <span class="cyan">arrow keys</span> and type commands (<span class="cyan">HELP</span> for the list). Find the bloodstained room and the weapon, and unmask the liar before your time runs out.`);
+  describeRoom();
   renderAll();
   $('#cmd-input').focus();
 
@@ -941,24 +906,7 @@ function initEvents() {
     if (e.key === 'Enter') { const v = e.target.value; e.target.value = ''; runCommand(v); }
   });
 
-  // quick actions
-  document.querySelectorAll('#quick-actions button').forEach(b => {
-    b.onclick = () => {
-      const c = b.dataset.cmd;
-      if (c === 'accuse') return openAccuse();
-      if (c === 'help') return showHelp();
-      if (c === 'notebook') return dumpNotebook();
-      if (c === 'look') return doLook();
-      if (c === 'examine') { const i = G.player; if (i === G.glassRoom && !G.hasGlass) return takeGlass(); return examineObject(i); }
-      if (c === 'question') {
-        const here = G.suspects.filter(n => G.positions[n] === G.player);
-        if (!here.length) return log('No one here to question. Explore to find the guests.', 'sys');
-        $('#cmd-input').value = 'question ' + here[0].split(' ').pop(); $('#cmd-input').focus();
-      }
-    };
-  });
-
-  // arrow keys walk the dot; PageUp/PageDown take the stairs (field empty only)
+  // arrow keys walk the dot (field empty only)
   document.addEventListener('keydown', e => {
     if (!G || G.over) return;
     const inField = document.activeElement === $('#cmd-input') && $('#cmd-input').value !== '';

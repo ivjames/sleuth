@@ -127,15 +127,7 @@ html, body {
 .big-btn.danger { border-color: var(--red); color: var(--red); }
 .big-btn.danger:hover { background: var(--red); color: #000; }
 
-/* ============ GAME LAYOUT — one compact column ============ */
-/* one-line status bar */
-#statusbar {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px;
-  font-size: 12px; padding: 4px 2px 6px; border-bottom: 1px solid var(--border); margin-bottom: 6px;
-}
-#statusbar .sep { color: var(--border); }
-.meter { display: inline-block; letter-spacing: 1px; }
-
+/* ============ GAME LAYOUT — map, a few lines of text, a prompt ============ */
 /* ---- Map (overhead floorplan) ---- */
 #map { display: flex; justify-content: center; overflow-x: auto; background: #000; border: 1px solid var(--border); padding: 4px; }
 .floor { min-width: 0; }
@@ -164,25 +156,9 @@ html, body {
 .g-pass { color: #ff5fff; }
 
 
-/* ---- Current room (one compact strip under the map) ---- */
-#room-line { margin: 6px 0 2px; }
-#room-title { color: var(--cyan); font-weight: bold; letter-spacing: 1px; margin-right: 6px; }
-#room-desc { color: var(--amber); }
-#room-occupants, #room-objects { margin-top: 3px; }
-.chip {
-  display: inline-block; border: 1px solid var(--border); padding: 1px 7px;
-  margin: 3px 4px 0 0; cursor: pointer; font-size: 12px; color: var(--amber);
-}
-.chip:hover { border-color: var(--border-hi); background: #1a1400; }
-.chip.person { color: var(--cyan); border-color: #164e63; }
-.chip.person:hover { background: #06283a; }
-.chip.object { color: var(--green); border-color: #14532d; }
-.chip.object:hover { background: #04220f; }
-.field-label { color: var(--gray); font-size: 12px; }
-
-/* ---- Log ---- */
+/* ---- Narrative: the last few lines of description / dialogue / actions ---- */
 #log {
-  max-height: 148px; overflow-y: auto; background: #000;
+  height: 6.4em; overflow-y: auto; background: #000;
   border: 1px solid var(--border); padding: 6px 8px; margin: 8px 0 0; font-size: 12.5px;
 }
 #log .line { margin: 2px 0; white-space: pre-wrap; }
@@ -192,7 +168,7 @@ html, body {
 #log .warn { color: var(--red); }
 #log .clue { color: var(--cyan); }
 
-/* ---- Prompt ---- */
+/* ---- Prompt (with a small time readout on the right) ---- */
 #prompt-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
 .prompt-caret { color: var(--green); font-size: 16px; }
 #cmd-input {
@@ -201,16 +177,7 @@ html, body {
 }
 #cmd-input:focus { outline: none; border-color: var(--border-hi); }
 #cmd-input::placeholder { color: #4a4a2a; }
-
-/* ---- Quick actions ---- */
-#quick-actions { display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
-#quick-actions button {
-  background: #000; border: 1px solid var(--border); color: var(--amber);
-  padding: 4px 10px; font-family: inherit; cursor: pointer; font-size: 12px;
-}
-#quick-actions button:hover { border-color: var(--border-hi); background: #1a1400; }
-#quick-actions button.danger { color: var(--red); border-color: #4a1010; }
-#quick-actions button.danger:hover { background: var(--red); color: #000; }
+#status { font-size: 12px; color: var(--gray); white-space: nowrap; }
 
 /* ============ MODALS ============ */
 .modal {
@@ -218,7 +185,8 @@ html, body {
   background: rgba(0,0,0,0.82);
   display: flex; align-items: center; justify-content: center; padding: 20px;
 }
-.modal-inner { max-width: 480px; width: 100%; background: var(--bg); border: 2px solid var(--border-hi); }
+.modal-inner { max-width: 480px; width: 100%; background: var(--bg); border: 2px solid var(--border-hi); padding: 12px 14px; }
+.box-title { color: var(--cyan); font-size: 13px; letter-spacing: 2px; border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-bottom: 8px; }
 .modal-warn { color: var(--red); font-size: 13px; }
 .accuse-row { display: flex; align-items: center; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
 .accuse-row label { color: var(--amber); min-width: 120px; }
