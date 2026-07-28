@@ -374,7 +374,7 @@ function log(text, cls = 'evt') {
   el.innerHTML = text;
   const box = $('#log');
   box.appendChild(el);
-  $('#log-box').scrollTop = $('#log-box').scrollHeight;
+  box.scrollTop = box.scrollHeight;
 }
 
 const escHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -481,29 +481,25 @@ function renderRoom() {
   objBox.querySelectorAll('[data-passage]').forEach(c => c.onclick = () => takePassage());
 }
 
+// One compact status line across the top (was a whole panel).
 function renderStatus() {
+  const bar = $('#statusbar'); if (!bar) return;
   const t = G.turnsLeft;
   const tcls = t <= 5 ? 'bad' : t <= 12 ? 'evt' : 'good';
-  const suspBars = '█'.repeat(G.suspicion) + '░'.repeat(Math.max(0, G.diff.suspThreshold - G.suspicion));
+  const susp = '▓'.repeat(G.suspicion) + '░'.repeat(Math.max(0, G.diff.suspThreshold - G.suspicion));
   const scls = G.suspicion >= G.diff.suspThreshold - 1 ? 'bad' : 'cyan';
-  const lines = [
-    `<div>Time before the killer strikes: <span class="meter ${tcls}">${t} moves</span></div>`,
-    `<div>Killer's suspicion: <span class="meter ${scls}">${suspBars}</span> ${G.hunting ? '<span class="bad">— HUNTING YOU!</span>' : ''}</div>`,
-    `<div>Magnifying glass: ${G.hasGlass ? '<span class="good">in hand</span>' : '<span class="dim">not found</span>'}</div>`,
-    `<hr style="border-color:#3a3a10">`,
-    `<div>ROOM:  ${G.knownRoom ? `<span class="good">${G.knownRoom}</span>` : '<span class="dim">unknown</span>'}</div>`,
-    `<div>WEAPON: ${G.knownWeapon ? `<span class="good">${G.knownWeapon}</span>` : (G.woundHint ? `<span class="cyan">${G.woundHint}?</span>` : '<span class="dim">unknown</span>')}</div>`,
-    `<div>MURDERER: <span class="dim">you must deduce this</span></div>`,
+  const parts = [
+    `<span class="dim">moves</span> <span class="meter ${tcls}">${t}</span>`,
+    `<span class="dim">suspicion</span> <span class="${scls}">${susp}</span>${G.hunting ? ' <span class="bad">HUNTED!</span>' : ''}`,
+    `<span class="dim">glass</span> ${G.hasGlass ? '<span class="good">✓</span>' : '<span class="dim">✗</span>'}`,
+    `<span class="dim">room</span> ${G.knownRoom ? `<span class="good">${G.knownRoom}</span>` : '<span class="dim">?</span>'}`,
+    `<span class="dim">weapon</span> ${G.knownWeapon ? `<span class="good">${G.knownWeapon}</span>` : (G.woundHint ? `<span class="cyan">${G.woundHint}?</span>` : '<span class="dim">?</span>')}`,
   ];
-  $('#status-lines').innerHTML = lines.join('');
+  bar.innerHTML = parts.join('<span class="sep">·</span>');
 }
 
-function renderNotebook() {
-  const nb = $('#notebook');
-  if (!G.notes.length) { nb.innerHTML = `<div class="nb-empty">Empty. Question the guests to record their alibis.</div>`; return; }
-  nb.innerHTML = G.notes.map(n => `<div class="nb-entry"><b>${n.name}:</b> ${n.text}</div>`).join('');
-  nb.scrollTop = nb.scrollHeight;
-}
+// Notebook is command-driven now (see dumpNotebook); no always-on panel.
+function renderNotebook() {}
 
 // A key under the map: what each letter on the floorplan stands for.
 function renderLegend() {

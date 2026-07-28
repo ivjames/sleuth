@@ -26,28 +26,30 @@ html, body {
   background: #000;
   color: var(--amber);
   font-family: "Courier New", "Lucida Console", Consolas, monospace;
-  font-size: 15px;
-  line-height: 1.35;
+  font-size: 13px;
+  line-height: 1.3;
   -webkit-font-smoothing: none;
 }
 
 /* CRT shell */
 #crt {
   min-height: 100vh;
-  padding: 18px;
+  padding: 10px;
   background:
     radial-gradient(ellipse at center, #0e0e14 0%, #000 100%);
 }
 
 #screen {
-  max-width: 1100px;
+  max-width: 620px;
   margin: 0 auto;
   border: 2px solid var(--border);
   background: var(--bg);
-  padding: 16px 18px 22px;
+  padding: 10px 12px 12px;
   position: relative;
   box-shadow: 0 0 30px rgba(255, 176, 0, 0.08), inset 0 0 60px rgba(0,0,0,0.6);
 }
+/* the start screen can breathe a little wider */
+#screen:has(#game-screen.hidden) { max-width: 760px; }
 
 /* scanlines overlay */
 #screen::after {
@@ -125,35 +127,22 @@ html, body {
 .big-btn.danger { border-color: var(--red); color: var(--red); }
 .big-btn.danger:hover { background: var(--red); color: #000; }
 
-/* ============ GAME LAYOUT ============ */
-#game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media (max-width: 760px) { #game-grid { grid-template-columns: 1fr; } }
-
-.box {
-  border: 1px solid var(--border);
-  background: var(--panel);
-  padding: 8px 10px 10px;
-  margin-bottom: 10px;
-  position: relative;
+/* ============ GAME LAYOUT — one compact column ============ */
+/* one-line status bar */
+#statusbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px;
+  font-size: 12px; padding: 4px 2px 6px; border-bottom: 1px solid var(--border); margin-bottom: 6px;
 }
-.box-title {
-  color: var(--cyan);
-  font-size: 12px;
-  letter-spacing: 2px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 4px;
-  margin-bottom: 6px;
-}
+#statusbar .sep { color: var(--border); }
+.meter { display: inline-block; letter-spacing: 1px; }
 
-/* ---- Map (overhead line-art floorplan) ---- */
-#map { display: flex; gap: 16px; align-items: flex-start; justify-content: center; overflow-x: auto; }
+/* ---- Map (overhead floorplan) ---- */
+#map { display: flex; justify-content: center; overflow-x: auto; background: #000; border: 1px solid var(--border); padding: 4px; }
 .floor { min-width: 0; }
-.floor-label { color: var(--amber-dim); font-size: 10px; letter-spacing: 2px; text-align: center; margin-bottom: 4px; }
-.floor-label.active { color: var(--cyan); }
 .floormap {
   margin: 0;
   font-family: "Courier New", monospace;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.0;
   letter-spacing: 0;
   white-space: pre;
@@ -182,12 +171,14 @@ html, body {
 #map-legend .g-you   { color: #ffe000; font-weight: bold; }
 #map-legend .g-guest { color: var(--cyan); font-weight: bold; }
 
-/* ---- Room detail ---- */
-#room-desc { color: var(--amber); margin-bottom: 6px; }
-#room-occupants, #room-objects { margin-top: 6px; }
+/* ---- Current room (one compact strip under the map) ---- */
+#room-line { margin: 6px 0 2px; }
+#room-title { color: var(--cyan); font-weight: bold; letter-spacing: 1px; margin-right: 6px; }
+#room-desc { color: var(--amber); }
+#room-occupants, #room-objects { margin-top: 3px; }
 .chip {
-  display: inline-block; border: 1px solid var(--border); padding: 2px 8px;
-  margin: 3px 4px 0 0; cursor: pointer; font-size: 13px; color: var(--amber);
+  display: inline-block; border: 1px solid var(--border); padding: 1px 7px;
+  margin: 3px 4px 0 0; cursor: pointer; font-size: 12px; color: var(--amber);
 }
 .chip:hover { border-color: var(--border-hi); background: #1a1400; }
 .chip.person { color: var(--cyan); border-color: #164e63; }
@@ -196,19 +187,11 @@ html, body {
 .chip.object:hover { background: #04220f; }
 .field-label { color: var(--gray); font-size: 12px; }
 
-/* ---- Status ---- */
-#status-lines div { margin: 3px 0; }
-.meter { display: inline-block; letter-spacing: 1px; }
-
-/* ---- Notebook ---- */
-#notebook { font-size: 13px; max-height: 190px; overflow-y: auto; }
-.nb-entry { margin: 4px 0; padding-left: 10px; border-left: 2px solid var(--border); }
-.nb-entry b { color: var(--cyan); }
-.nb-empty { color: var(--gray); font-style: italic; }
-
 /* ---- Log ---- */
-#log-box { max-height: 190px; overflow-y: auto; background: #000; }
-#log { font-size: 14px; }
+#log {
+  max-height: 148px; overflow-y: auto; background: #000;
+  border: 1px solid var(--border); padding: 6px 8px; margin: 8px 0 0; font-size: 12.5px;
+}
 #log .line { margin: 2px 0; white-space: pre-wrap; }
 #log .sys { color: var(--gray); }
 #log .you { color: var(--green); }
@@ -217,20 +200,20 @@ html, body {
 #log .clue { color: var(--cyan); }
 
 /* ---- Prompt ---- */
-#prompt-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
-.prompt-caret { color: var(--green); font-size: 18px; }
+#prompt-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.prompt-caret { color: var(--green); font-size: 16px; }
 #cmd-input {
   flex: 1; background: #000; border: 1px solid var(--border);
-  color: var(--green); padding: 8px 10px; font-family: inherit; font-size: 15px;
+  color: var(--green); padding: 6px 8px; font-family: inherit; font-size: 13px;
 }
 #cmd-input:focus { outline: none; border-color: var(--border-hi); }
 #cmd-input::placeholder { color: #4a4a2a; }
 
 /* ---- Quick actions ---- */
-#quick-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+#quick-actions { display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
 #quick-actions button {
   background: #000; border: 1px solid var(--border); color: var(--amber);
-  padding: 6px 12px; font-family: inherit; cursor: pointer; font-size: 13px;
+  padding: 4px 10px; font-family: inherit; cursor: pointer; font-size: 12px;
 }
 #quick-actions button:hover { border-color: var(--border-hi); background: #1a1400; }
 #quick-actions button.danger { color: var(--red); border-color: #4a1010; }

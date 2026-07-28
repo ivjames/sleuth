@@ -51,50 +51,34 @@
         <button id="start-btn" class="big-btn">&gt; BEGIN INVESTIGATION</button>
       </section>
 
-      <!-- ===== GAME SCREEN ===== -->
+      <!-- ===== GAME SCREEN — one narrow terminal column ===== -->
       <section id="game-screen" class="panel hidden">
-        <div id="game-grid">
-          <!-- Map + room detail -->
-          <div id="left-col">
-            <div id="map-box" class="box">
-              <div class="box-title">ESTATE MAP</div>
-              <div id="map"></div>
-              <div id="map-legend"></div>
-            </div>
-            <div id="room-box" class="box">
-              <div class="box-title" id="room-title">ROOM</div>
-              <div id="room-desc"></div>
-              <div id="room-occupants"></div>
-              <div id="room-objects"></div>
-            </div>
-          </div>
+        <!-- one-line status bar -->
+        <div id="statusbar"></div>
 
-          <!-- Status + notebook -->
-          <div id="right-col">
-            <div id="status-box" class="box">
-              <div class="box-title">CASE STATUS</div>
-              <div id="status-lines"></div>
-            </div>
-            <div id="notebook-box" class="box">
-              <div class="box-title">DETECTIVE'S NOTEBOOK</div>
-              <div id="notebook"></div>
-            </div>
-          </div>
+        <!-- the floorplan + its legend -->
+        <div id="map"></div>
+        <div id="map-legend"></div>
+
+        <!-- current room: title, who's here, what's here -->
+        <div id="room-line">
+          <span id="room-title"></span>
+          <span id="room-desc"></span>
         </div>
+        <div id="room-occupants"></div>
+        <div id="room-objects"></div>
 
-        <!-- Message log -->
-        <div id="log-box" class="box">
-          <div id="log"></div>
-        </div>
+        <!-- message log -->
+        <div id="log"></div>
 
-        <!-- Command line -->
+        <!-- command line -->
         <div id="prompt-row">
           <span class="prompt-caret">&gt;</span>
           <input id="cmd-input" type="text" spellcheck="false" autocomplete="off"
-                 placeholder="arrow keys walk the map  ·  type a command (try: HELP)">
+                 placeholder="arrow keys move  ·  type a command (HELP)">
         </div>
 
-        <!-- Quick action buttons -->
+        <!-- compact actions -->
         <div id="quick-actions">
           <button data-cmd="look">Look</button>
           <button data-cmd="examine">Examine</button>
