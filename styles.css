@@ -169,6 +169,19 @@ html, body {
 .floormap .g-pass  { color: #ff5fff; font-weight: bold; }   /* an opened secret passage */
 .g-pass { color: #ff5fff; }
 
+/* ---- Map legend: what the letters on the floorplan mean ---- */
+#map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--dim);
+}
+#map-legend .lg { white-space: nowrap; }
+#map-legend .g-you   { color: #ffe000; font-weight: bold; }
+#map-legend .g-guest { color: var(--cyan); font-weight: bold; }
+
 /* ---- Room detail ---- */
 #room-desc { color: var(--amber); margin-bottom: 6px; }
 #room-occupants, #room-objects { margin-top: 6px; }
