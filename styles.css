@@ -151,8 +151,21 @@ html, body {
   border: 1px solid var(--border);
 }
 .floormap .g-wall  { color: #b4b4b4; }               /* solid gray walls, like the original */
-.floormap .g-you   { color: #ffe000; text-shadow: 0 0 6px rgba(255,224,0,0.6); }        /* you: yellow face on black */
-.floormap .g-guest { color: #000; background: #ffe000; }                               /* guests: inverted (black face on yellow) */
+/* Player + guests are little crisp faces (tiny SVGs sized to one cell), not the
+   font's fat cartoon ☻. You: a yellow disc. Guests: the inverted tile. */
+.floormap .mf {
+  display: inline-block; width: 1ch; height: 1em; vertical-align: top;
+  background-repeat: no-repeat; background-position: center;
+}
+.floormap .mf.you {
+  background-size: 96% 96%;
+  filter: drop-shadow(0 0 3px rgba(255,224,0,0.7));
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%23ffe000'/%3E%3Ccircle cx='5.6' cy='6.6' r='1' fill='%23000'/%3E%3Ccircle cx='10.4' cy='6.6' r='1' fill='%23000'/%3E%3Cpath d='M4.8 9.7 Q8 12.6 11.2 9.7' stroke='%23000' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+.floormap .mf.npc {
+  background-size: 92% 92%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%2322d3ee'/%3E%3Ccircle cx='5.6' cy='6.6' r='1' fill='%23000'/%3E%3Ccircle cx='10.4' cy='6.6' r='1' fill='%23000'/%3E%3Cpath d='M4.8 9.7 Q8 12.6 11.2 9.7' stroke='%23000' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+}
 .floormap .g-stair { color: #8ae234; }
 .floormap .g-here  { color: #4a3a10; }               /* faint dots mark the room you're standing in */
 .floormap .g-pass  { color: #ff5fff; font-weight: bold; }   /* an opened secret passage */

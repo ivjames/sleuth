@@ -370,7 +370,11 @@ function log(text, cls = 'evt') {
 
 const escHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const BLOCK_RE = /[█▀▄▌▐▙▟▛▜▖▗▘▝▚▞]/;   // any wall glyph in the map
-const FACE = '☻︎';             // CP437 smiley (VS15 forces the flat text form, not a colour emoji)
+// The player and guests are little crisp faces drawn as tiny cell-sized SVGs
+// (the font's ☻ renders as a fat cartoon emoji — this keeps them small and sharp).
+// You: a yellow disc. Guests: the inverted form — a yellow tile with a black face.
+const FACE_YOU = '<span class="mf you"></span>';
+const FACE_NPC = '<span class="mf npc"></span>';
 
 // Draw the hand-drawn floorplan exactly as authored (block glyphs and all), with
 // the player as a dot walking the open floor and the guests as lettered dots.
@@ -385,9 +389,9 @@ function renderMap() {
     const ri = G.positions[n], m = ROOM_META[ri];
     const off = (perRoom[ri] = (perRoom[ri] || 0) + 1) - 1;
     const gx = m.center.x + (off % 2), gy = m.center.y + ((off / 2) | 0);
-    overlay[gy + ',' + gx] = { ch: FACE, cls: 'g-guest' };   // anonymous guests: inverted smiley (black on yellow)
+    overlay[gy + ',' + gx] = { html: FACE_NPC };   // anonymous guest face
   });
-  overlay[G.py + ',' + G.px] = { ch: FACE, cls: 'g-you' };   // you: yellow smiley on black
+  overlay[G.py + ',' + G.px] = { html: FACE_YOU };   // you
   // open-passage endpoints show a '=' where you can slip through
   const P = G.passage;
   if (P.found) [P.panelRoom, P.exitRoom].forEach(r => {
@@ -405,6 +409,7 @@ function renderMap() {
       const flush = () => { if (run) { html += runCls ? `<span class="${runCls}">${escHtml(run)}</span>` : escHtml(run); run = ''; } };
       for (let x = 0; x < f.W; x++) {
         const ov = overlay[y + ',' + x];
+        if (ov && ov.html) { flush(); runCls = null; html += ov.html; continue; }  // a drawn face
         let ch, cls;
         if (ov) { ch = ov.ch; cls = ov.cls; }
         else {
@@ -914,7 +919,7 @@ function startGame() {
 
   log(`<span class="clue">It is a dark and stormy night. A scream echoes through a sprawling <span class="hl">single-story estate</span>. ${G.victim} has been murdered — the body already spirited away by persons unknown, but the killer left their mark on the floor of one room.</span>`);
   log(`The guests — <span class="cyan">${G.suspects.join(', ')}</span> — are all still here. One of them is the murderer.`);
-  log(`On the map you are the <span class="hl">yellow face</span>; the guests are the <span class="hl">bright inverted faces</span>. Walk with the <span class="cyan">arrow keys</span>, find the bloodstained room and the weapon, and unmask the liar before your time runs out. Type <span class="cyan">HELP</span> to begin.`);
+  log(`On the map you are the <span class="hl">yellow face</span>; the guests are the <span class="hl">cyan faces</span>. Walk with the <span class="cyan">arrow keys</span>, find the bloodstained room and the weapon, and unmask the liar before your time runs out. Type <span class="cyan">HELP</span> to begin.`);
   renderAll();
   $('#cmd-input').focus();
 

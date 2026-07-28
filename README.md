@@ -47,8 +47,9 @@ character-for-character from the original as a monospaced block-glyph grid — f
 blocks (`█`) for the outer walls, half blocks (`▀▄▌▐` and corners) for the interior
 walls, and thin lines (`─`) for the staircase steps at the two front entrances.
 Your character is a **yellow smiley face** that walks the open floor; any block glyph is
-solid, spaces are floor, and the guests show as anonymous `☻` faces (as in the
-original) — you find out who's in a room by walking in and reading who's there.
+solid, spaces are floor. You are the **yellow face**; the guests are anonymous
+**cyan faces** (as in the original) — you find out who's in a room by walking in
+and reading who's there.
 
 The estate holds **twelve named rooms** — Parlor, Sewing Room, Study, West Hall,
 Grand Foyer, Dining Hall, Ballroom, Music Room, East Hall, Master Bedroom,
