@@ -1,0 +1,10 @@
+DARRLEON = MFOB72
+
+This is the dining hall. A long teak table runs from one end of the roon to
+the other. A wet bar sits near the entrance to the room.
+
+A silver serving platter is perched on the edge of the table.
+
+William Seton peers out from underneath the table.
+
+)

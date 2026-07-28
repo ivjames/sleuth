@@ -1,0 +1,5 @@
+DARRLBON = NFO872
+
+It is a dark and stormy night.
+
+A murder is heing committed ...

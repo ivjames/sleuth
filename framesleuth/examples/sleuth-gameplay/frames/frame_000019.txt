@@ -1,0 +1,3 @@
+DARKRLEON = MFO872
+
+This door leads into the butler’s bedroom.

@@ -51,6 +51,14 @@ out/
 frame its `filename`, originating `source_frame`, `timestamp`, `phash`, and
 (when OCR is on) the extracted `text`.
 
+## Example
+
+A worked example on real footage lives in
+[`examples/sleuth-gameplay/`](examples/sleuth-gameplay/): gameplay of the
+original SLEUTH 4.1 DOS game, where 557 sampled frames collapse to 25 distinct
+shots with OCR text per frame. See its
+[README](examples/sleuth-gameplay/README.md) and contact sheet.
+
 ## Options
 
 | Flag | Default | Meaning |
