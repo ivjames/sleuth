@@ -67,6 +67,14 @@
                  placeholder="type a command — arrows move, HELP for the list">
           <span id="status"></span>
         </div>
+
+        <!-- touch D-pad: on iPad/phones there are no arrow keys, so walk with these -->
+        <div id="dpad" role="group" aria-label="Move">
+          <button type="button" class="dbtn up"    data-dir="N" aria-label="Move north">&#9650;</button>
+          <button type="button" class="dbtn left"  data-dir="W" aria-label="Move west">&#9664;</button>
+          <button type="button" class="dbtn right" data-dir="E" aria-label="Move east">&#9654;</button>
+          <button type="button" class="dbtn down"  data-dir="S" aria-label="Move south">&#9660;</button>
+        </div>
       </section>
 
       <!-- ===== ACCUSE MODAL ===== -->

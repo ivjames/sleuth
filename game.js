@@ -461,6 +461,26 @@ function renderMap() {
     wrap.appendChild(pre);
     map.appendChild(wrap);
   });
+
+  fitMap();
+}
+
+// Size the floorplan as large as it fits its container on BOTH axes, so the map
+// fills the screen on any device. Monospace scales linearly, so measure once at
+// a reference size and scale from there. Safe no-op when there's no layout yet.
+function fitMap() {
+  const mapEl = $('#map'); if (!mapEl) return;
+  const pre = mapEl.querySelector('.floormap'); if (!pre) return;
+  const availW = mapEl.clientWidth  - 12;   // minus #map padding + a hair of slack
+  const availH = mapEl.clientHeight - 12;
+  if (availW < 8 || availH < 8) return;
+  const REF = 24;
+  pre.style.fontSize = REF + 'px';
+  const w = pre.scrollWidth, h = pre.scrollHeight;
+  if (!w || !h) return;
+  let fs = REF * Math.min(availW / w, availH / h);
+  fs = Math.max(11, Math.min(fs, 58));
+  pre.style.fontSize = fs.toFixed(1) + 'px';
 }
 
 // The room description now goes into the narrative flow (no side panel). Prints
@@ -899,6 +919,20 @@ function initEvents() {
     const map = { ArrowUp:'N', ArrowDown:'S', ArrowLeft:'W', ArrowRight:'E', PageUp:'U', PageDown:'D' };
     if (map[e.key]) { e.preventDefault(); moveDir(map[e.key]); }
   });
+
+  // touch D-pad — walk on devices without arrow keys (iPad/phones)
+  document.querySelectorAll('.dbtn').forEach(b => {
+    b.addEventListener('click', e => {
+      e.preventDefault();
+      if (!G || G.over) return;
+      if ($('#game-screen').classList.contains('hidden')) return;
+      moveDir(b.dataset.dir);
+    });
+  });
+
+  // keep the map filling the screen as the window resizes / the device rotates
+  window.addEventListener('resize', fitMap);
+  window.addEventListener('orientationchange', () => setTimeout(fitMap, 120));
 
   // accuse modal
   $('#acc-confirm').onclick = confirmAccuse;
