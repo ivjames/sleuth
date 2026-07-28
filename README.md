@@ -35,8 +35,8 @@ Every innocent guest was somewhere with at least one other innocent, and each
 names the others they were with — so innocents **mutually corroborate**. The
 murderer, who was really at the scene, invents an alibi: they claim a room and
 name a "witness." But that witness never places them there. So the murderer is
-the **unique guest whose alibi no one confirms**. Question the guests, watch
-the notebook, and find the liar.
+the **unique guest whose alibi no one confirms**. Question the guests, keep
+track of who was where, and find the liar.
 
 This invariant is checked in `test/solvable.test.js`.
 
@@ -47,7 +47,8 @@ character-for-character from the original as a monospaced block-glyph grid — f
 blocks (`█`) for the outer walls, half blocks (`▀▄▌▐` and corners) for the interior
 walls, and thin lines (`─`) for the staircase steps at the two front entrances.
 Your character is a **dot (`@`)** that walks the open floor; any block glyph is
-solid, spaces are floor, and the guests show as lettered dots.
+solid, spaces are floor, and the guests show as anonymous `☻` faces (as in the
+original) — you find out who's in a room by walking in and reading who's there.
 
 The estate holds **twelve named rooms** — Parlor, Sewing Room, Study, West Hall,
 Grand Foyer, Dining Hall, Ballroom, Music Room, East Hall, Master Bedroom,
@@ -75,7 +76,6 @@ dark.
 - **`TAKE glass`**: pick up the magnifying glass (required before you can examine clues).
 - **`EXAMINE`**: inspect the clue in the current room (or click the object).
 - **`QUESTION <name>`**: ask a guest for their alibi (or click a guest). **Don't over-ask** — the murderer notices.
-- **`NOTEBOOK`**: review everything you've gathered.
 - **`ACCUSE`**: name the murderer, weapon, and room. One shot. Be right.
 - **`WAIT`**, **`LOOK`**, **`HELP`**: as you'd expect.
 

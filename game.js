@@ -242,15 +242,6 @@ function newGame(names, diffKey) {
   const victim   = pick(guests);                     // one of the eight is the deceased
   let suspects   = guests.filter(n => n !== victim); // the remaining seven are suspects
 
-  // give each suspect a UNIQUE one-character marker for the map (first free letter
-  // of their name, else a digit) so colliding initials never read ambiguously
-  const marks = {}; const usedMarks = new Set(['@', '·', '=']);
-  for (const n of suspects) {
-    const letters = (n.toUpperCase().match(/[A-Z]/g) || []);
-    const ch = [...letters, ...'23456789#*'].find(c => !usedMarks.has(c)) || '?';
-    usedMarks.add(ch); marks[n] = ch;
-  }
-
   // The house is the fixed one-story estate (the hand-drawn floorplan).
   buildHouse();
 
@@ -336,7 +327,7 @@ function newGame(names, diffKey) {
   G = {
     diff, diffKey,
     stories: STORIES,        // 1 or 2 — the house drawn this game
-    suspects, murdererName, weapon, victim, marks,
+    suspects, murdererName, weapon, victim,
     murderRoom, weaponRoom, weaponAtScene, glassRoom,
     people, objects, positions, passage,
     player: FLOORS[0].owner[START_TILE.y][START_TILE.x],  // ROOM you're standing in
@@ -393,7 +384,7 @@ function renderMap() {
     const ri = G.positions[n], m = ROOM_META[ri];
     const off = (perRoom[ri] = (perRoom[ri] || 0) + 1) - 1;
     const gx = m.center.x + (off % 2), gy = m.center.y + ((off / 2) | 0);
-    overlay[gy + ',' + gx] = { ch: G.marks[n], cls: 'g-guest' };
+    overlay[gy + ',' + gx] = { ch: '☻', cls: 'g-guest' };   // anonymous guests, as the original (CP437 smiley)
   });
   overlay[G.py + ',' + G.px] = { ch: '@', cls: 'g-you' };
   // open-passage endpoints show a '=' where you can slip through
@@ -501,16 +492,7 @@ function renderStatus() {
 // Notebook is command-driven now (see dumpNotebook); no always-on panel.
 function renderNotebook() {}
 
-// A key under the map: what each letter on the floorplan stands for.
-function renderLegend() {
-  const el = $('#map-legend');
-  if (!el) return;
-  const items = [`<span class="lg"><span class="g-you">@</span>&nbsp;you</span>`]
-    .concat(G.suspects.map(n => `<span class="lg"><span class="g-guest">${G.marks[n]}</span>&nbsp;${escHtml(n)}</span>`));
-  el.innerHTML = items.join('');
-}
-
-function renderAll() { renderMap(); renderLegend(); renderRoom(); renderStatus(); renderNotebook(); }
+function renderAll() { renderMap(); renderRoom(); renderStatus(); renderNotebook(); }
 
 const enc = s => encodeURIComponent(s);
 const dec = s => decodeURIComponent(s);
