@@ -465,36 +465,48 @@ function renderMap() {
   fitMap();
 }
 
-// Keep --game-h synced to the *visible* viewport height. On mobile the
-// visualViewport shrinks when the on-screen keyboard opens, so this is what
-// keeps the map + log + input + D-pad all above the keyboard.
+// Last known *visible* viewport height (shrinks when the on-screen keyboard
+// opens). fitMap uses it as the total height budget so the whole compact stack
+// stays within view without the layout having to stretch to fill the screen.
+let visibleH = 0;
 function syncViewport() {
   if (typeof window === 'undefined') return;
   const vv = window.visualViewport;
   const h = Math.round((vv && vv.height) || window.innerHeight || 0);
-  if (h) document.documentElement.style.setProperty('--game-h', h + 'px');
+  if (h) { visibleH = h; document.documentElement.style.setProperty('--game-h', h + 'px'); }
+  // On a short visible viewport (e.g. a phone with the keyboard up) compact the
+  // log/D-pad so the whole stack still fits. Driven from JS because iOS doesn't
+  // change the CSS layout height when the keyboard opens — only visualViewport.
+  if (typeof document !== 'undefined' && document.body)
+    document.body.classList.toggle('short-view', !!h && h < 620);
   fitMap();
 }
 
 // Size the floorplan as large as it fits — width by its own box, height by
-// whatever's left in the game screen after the log, prompt and D-pad. Monospace
-// scales linearly, so measure once at a reference size and scale. When the
-// keyboard shrinks the viewport the height budget drops and the map shrinks to
-// match, so nothing is pushed off-screen. Safe no-op with no layout yet.
+// whatever's left of the visible viewport after the screen's own chrome, the
+// log, the prompt and the D-pad. The game bundles at the top and does NOT
+// stretch to fill; this budget just guarantees the whole stack (incl. a raised
+// keyboard) stays on screen. Monospace scales linearly, so measure once at a
+// reference size and scale. Safe no-op with no layout yet.
 function fitMap() {
   const mapEl = $('#map'); if (!mapEl) return;
   const pre = mapEl.querySelector('.floormap'); if (!pre) return;
   const gs = $('#game-screen'); if (!gs) return;
+  const screen = $('#screen'); if (!screen) return;
 
-  let used = 0;   // height taken by the non-map rows (+ the flex gaps between them)
+  let used = 0;   // height of the non-map rows
   ['#log', '#prompt-row', '#dpad'].forEach(sel => {
     const el = $(sel);
     if (el && getComputedStyle(el).display !== 'none') used += el.offsetHeight;
   });
   const gap = parseFloat(getComputedStyle(gs).rowGap) || 0;
+  const ss = getComputedStyle(screen);
+  const chrome = parseFloat(ss.paddingTop) + parseFloat(ss.paddingBottom)
+               + parseFloat(ss.borderTopWidth) + parseFloat(ss.borderBottomWidth);
+  const vh = visibleH || window.innerHeight;
 
-  const availW = mapEl.clientWidth - 12;                 // minus #map padding + slack
-  const availH = gs.clientHeight - used - gap * 3 - 12;  // leftover for the map
+  const availW = mapEl.clientWidth - 12;                    // minus #map padding + slack
+  const availH = vh - chrome - used - gap * 3 - 10;         // leftover for the map
   if (availW < 8 || availH < 8) return;
 
   const REF = 24;

@@ -128,29 +128,26 @@ html, body {
 .big-btn.danger:hover { background: var(--red); color: #000; }
 
 /* ============ GAME LAYOUT — map, a few lines of text, a prompt ============ */
-/* In-game the screen fills the *visible* viewport. JS keeps --game-h synced to
-   window.visualViewport.height, so when the on-screen keyboard is raised the
-   whole layout (map + log + input + D-pad) stays above it instead of scrolling
-   off. Falls back to 100dvh before the script runs. */
+/* The game is a compact block bundled at the TOP of the viewport — it does not
+   stretch to fill the screen. JS (fitMap) sizes the map so the whole stack still
+   fits within the *visible* viewport (window.visualViewport), so when the
+   on-screen keyboard is raised the map shrinks and map + log + input + D-pad all
+   stay above it. --game-h tracks the visible height for that budget. */
 #screen:has(#game-screen:not(.hidden)) {
   max-width: none;
-  min-height: 0;
-  height: var(--game-h, 100dvh);
-  display: flex;
-  flex-direction: column;
   padding: 6px 8px 8px;
 }
 #game-screen:not(.hidden) {
-  display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; gap: 6px;
+  display: flex; flex-direction: column; gap: 6px;
 }
-/* pin the game to the visible area — don't let the map scroll under the keyboard */
+/* don't let the page scroll the map under the keyboard */
 body:has(#game-screen:not(.hidden)) { overflow: hidden; }
 
-/* ---- Map (overhead floorplan) — sits at the top at its natural fitted size;
-   JS (fitMap) sizes the font to the width AND the height that's left over. ---- */
+/* ---- Map (overhead floorplan) — natural fitted size; JS sizes the font to the
+   width AND the height budget left within the visible viewport. ---- */
 #map {
   display: flex; justify-content: center; align-items: flex-start;
-  flex: 0 1 auto; min-height: 0; overflow: hidden;
+  flex: 0 0 auto; overflow: hidden;
   background: #000; border: 1px solid var(--border); padding: 4px;
 }
 .floor { min-width: 0; }
@@ -193,10 +190,7 @@ body:has(#game-screen:not(.hidden)) { overflow: hidden; }
 #log .clue { color: var(--cyan); }
 
 /* ---- Prompt (with a small time readout on the right) ---- */
-/* input + D-pad form the bottom group; margin-top:auto pushes them to the bottom
-   of the visible area (just above the keyboard when it's up), so the leftover
-   vertical space falls between the log and the controls — not around the map. */
-#prompt-row { display: flex; align-items: center; gap: 6px; margin-top: auto; flex: 0 0 auto; }
+#prompt-row { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
 .prompt-caret { color: var(--green); font-size: 16px; }
 #cmd-input {
   flex: 1; background: #000; border: 1px solid var(--border);
@@ -229,6 +223,12 @@ body:has(#game-screen:not(.hidden)) { overflow: hidden; }
 .dbtn.right { grid-area: 2 / 3; }
 .dbtn.down  { grid-area: 3 / 2; }
 @media (hover: none), (pointer: coarse) { #dpad { display: grid; } }
+
+/* short visible viewport (phone + keyboard): shrink the log and D-pad so the
+   whole stack still fits above the keyboard (toggled from JS via visualViewport) */
+body.short-view #log { height: 3.6em; }
+body.short-view #dpad { width: min(196px, 52vw); gap: 6px; }
+body.short-view .dbtn { padding: 8px 0; font-size: 18px; }
 
 /* ============ MODALS ============ */
 .modal {
