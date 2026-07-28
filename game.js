@@ -370,6 +370,7 @@ function log(text, cls = 'evt') {
 
 const escHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const BLOCK_RE = /[█▀▄▌▐▙▟▛▜▖▗▘▝▚▞]/;   // any wall glyph in the map
+const CORNER_RE = /[▙▟▛▜▚▞▖▗▘▝]/;        // partial-quadrant corners -> drawn solid
 const FACE_YOU = '☻';   // you: the filled CP437 smiley (U+263B)
 const FACE_NPC = '☺';   // guests: the outline CP437 smiley (U+263A)
 
@@ -410,7 +411,10 @@ function renderMap() {
         if (ov) { ch = ov.ch; cls = ov.cls; }
         else {
           const g = f.glyph[y][x];
-          if (BLOCK_RE.test(g))     { ch = g;   cls = 'g-wall'; }
+          // corner (3-quadrant) glyphs leave a notch that reads as a diagonal in a
+          // pixel font — fill them solid so wall corners are clean squares
+          if (CORNER_RE.test(g))    { ch = '█'; cls = 'g-wall'; }
+          else if (BLOCK_RE.test(g)){ ch = g;   cls = 'g-wall'; }
           else if (g === '─')       { ch = '─'; cls = 'g-stair'; }
           else if (f.owner[y][x] === G.player) { ch = '·'; cls = 'g-here'; }  // floor of the room you're in
           else { ch = ' '; cls = null; }
