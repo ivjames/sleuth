@@ -141,7 +141,10 @@ html, body {
 .floor { min-width: 0; }
 .floormap {
   margin: 0;
-  font-family: "Courier New", monospace;
+  /* Consolas / Menlo / DejaVu all carry the block glyphs AND a monochrome CP437
+     smiley (☺ ☻), so the browser draws the face as text instead of a colour
+     emoji. Courier New is last so the emoji fallback is never reached. */
+  font-family: Consolas, Menlo, "DejaVu Sans Mono", "Liberation Mono", "Courier New", monospace;
   font-size: 11px;
   line-height: 1.0;
   letter-spacing: 0;
@@ -151,21 +154,10 @@ html, body {
   border: 1px solid var(--border);
 }
 .floormap .g-wall  { color: #b4b4b4; }               /* solid gray walls, like the original */
-/* Player + guests are little crisp faces (tiny SVGs sized to one cell), not the
-   font's fat cartoon ☻. You: a yellow disc. Guests: the inverted tile. */
-.floormap .mf {
-  display: inline-block; width: 1ch; height: 1em; vertical-align: top;
-  background-repeat: no-repeat; background-position: center;
-}
-.floormap .mf.you {
-  background-size: 96% 96%;
-  filter: drop-shadow(0 0 3px rgba(255,224,0,0.7));
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%23ffe000'/%3E%3Ccircle cx='5.6' cy='6.6' r='1' fill='%23000'/%3E%3Ccircle cx='10.4' cy='6.6' r='1' fill='%23000'/%3E%3Cpath d='M4.8 9.7 Q8 12.6 11.2 9.7' stroke='%23000' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-}
-.floormap .mf.npc {
-  background-size: 92% 92%;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%2322d3ee'/%3E%3Ccircle cx='5.6' cy='6.6' r='1' fill='%23000'/%3E%3Ccircle cx='10.4' cy='6.6' r='1' fill='%23000'/%3E%3Cpath d='M4.8 9.7 Q8 12.6 11.2 9.7' stroke='%23000' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-}
+/* Player + guests are the CP437 smiley characters themselves — just the face,
+   no background: you are the filled ☻ in yellow, guests the outline ☺ in cyan. */
+.floormap .g-you   { color: #ffe000; text-shadow: 0 0 5px rgba(255,224,0,0.7); }
+.floormap .g-guest { color: var(--cyan); }
 .floormap .g-stair { color: #8ae234; }
 .floormap .g-here  { color: #4a3a10; }               /* faint dots mark the room you're standing in */
 .floormap .g-pass  { color: #ff5fff; font-weight: bold; }   /* an opened secret passage */

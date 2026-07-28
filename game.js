@@ -370,11 +370,8 @@ function log(text, cls = 'evt') {
 
 const escHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const BLOCK_RE = /[█▀▄▌▐▙▟▛▜▖▗▘▝▚▞]/;   // any wall glyph in the map
-// The player and guests are little crisp faces drawn as tiny cell-sized SVGs
-// (the font's ☻ renders as a fat cartoon emoji — this keeps them small and sharp).
-// You: a yellow disc. Guests: the inverted form — a yellow tile with a black face.
-const FACE_YOU = '<span class="mf you"></span>';
-const FACE_NPC = '<span class="mf npc"></span>';
+const FACE_YOU = '☻';   // you: the filled CP437 smiley (U+263B)
+const FACE_NPC = '☺';   // guests: the outline CP437 smiley (U+263A)
 
 // Draw the hand-drawn floorplan exactly as authored (block glyphs and all), with
 // the player as a dot walking the open floor and the guests as lettered dots.
@@ -389,9 +386,9 @@ function renderMap() {
     const ri = G.positions[n], m = ROOM_META[ri];
     const off = (perRoom[ri] = (perRoom[ri] || 0) + 1) - 1;
     const gx = m.center.x + (off % 2), gy = m.center.y + ((off / 2) | 0);
-    overlay[gy + ',' + gx] = { html: FACE_NPC };   // anonymous guest face
+    overlay[gy + ',' + gx] = { ch: FACE_NPC, cls: 'g-guest' };   // anonymous guest face
   });
-  overlay[G.py + ',' + G.px] = { html: FACE_YOU };   // you
+  overlay[G.py + ',' + G.px] = { ch: FACE_YOU, cls: 'g-you' };   // you
   // open-passage endpoints show a '=' where you can slip through
   const P = G.passage;
   if (P.found) [P.panelRoom, P.exitRoom].forEach(r => {
@@ -409,7 +406,6 @@ function renderMap() {
       const flush = () => { if (run) { html += runCls ? `<span class="${runCls}">${escHtml(run)}</span>` : escHtml(run); run = ''; } };
       for (let x = 0; x < f.W; x++) {
         const ov = overlay[y + ',' + x];
-        if (ov && ov.html) { flush(); runCls = null; html += ov.html; continue; }  // a drawn face
         let ch, cls;
         if (ov) { ch = ov.ch; cls = ov.cls; }
         else {
