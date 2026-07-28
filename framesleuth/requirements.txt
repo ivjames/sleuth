@@ -1,0 +1,13 @@
+# framesleuth Python dependencies.
+#
+# System dependencies (not installable via pip) are also required:
+#   - ffmpeg / ffprobe   (frame extraction + probing)
+#   - tesseract-ocr      (OCR; only needed when --ocr is enabled)
+#
+# On Debian/Ubuntu:  apt-get install ffmpeg tesseract-ocr
+
+numpy>=1.24
+Pillow>=10.0
+ImageHash>=4.3
+pytesseract>=0.3.10
+yt-dlp>=2024.1.0
