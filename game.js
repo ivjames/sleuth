@@ -46,18 +46,18 @@ const MAPW = 40, MAPH = MAP.length;
 // joins the nearest centre it can actually walk to. The Sewing Room sits behind
 // sealed walls with no doorway — only the SECRET PASSAGE reaches it.
 const ZONE_DEFS = [
-  ['Parlor', 3, 3], ['Sewing Room', 3, 6], ['Study', 3, 11],
+  ['Parlor', 3, 3], ['Secret Passage', 3, 6], ['Study', 3, 11],
   ['West Hall', 9, 4], ['Grand Foyer', 20, 1], ['Dining Hall', 16, 6],
   ['Ballroom', 24, 9], ['Music Room', 16, 11], ['East Hall', 29, 5],
   ['Master Bedroom', 35, 2], ['Bathroom', 35, 5], ['Kitchen', 35, 10],
 ];
 const START_TILE = { x: 9, y: 12 };   // you begin at the front door (left stair)
-const SEALED_ROOM = 1;                 // Sewing Room — reached only by the passage
+const SEALED_ROOM = 1;                 // the hidden passage: sealed, no ordinary doorway
 
 // Room flavour, drawn from the original's own descriptions where we have them.
 const ROOM_FLAVOR = {
   'Parlor':         'A large sofa sits in the middle of the room; through the window you can see the front lawn. An antique silver teapot rests on a side table.',
-  'Sewing Room':    'Many overstuffed chairs sit in a circle. It feels forgotten — no ordinary door leads here.',
+  'Secret Passage': 'A cramped, pitch-black passage inside the walls. A cold stone obelisk squats in the dark. Somewhere the floor feels loose — keep moving and it may drop you out elsewhere.',
   'Study':          'Leather-bound books line the shelves and a heavy oak desk faces the door.',
   'West Hall':      'You are walking through the west hall; the walls are papered in a tasteful floral design.',
   'Grand Foyer':    'A wide entrance hall. Portraits of stern ancestors watch you from the walls.',
@@ -147,8 +147,31 @@ function buildHouse() {
 function reachableRooms() {
   const start = FLOORS[0].owner[START_TILE.y][START_TILE.x];
   const seen = new Set([start]), st = [start];
-  while (st.length) { const c = st.pop(); for (const k of Object.keys(ADJ[c])) { const nb = ADJ[c][k]; if (k !== 'P' && !seen.has(nb)) { seen.add(nb); st.push(nb); } } }
+  while (st.length) { const c = st.pop(); for (const k of Object.keys(ADJ[c])) { const nb = ADJ[c][k]; if (!seen.has(nb)) { seen.add(nb); st.push(nb); } } }
   return seen;
+}
+
+// The secret passage, fixed at the start of each game:
+//   entry — a hidden door in the sealed chamber's wall. `a` is the floor tile
+//           just outside it, `b` the chamber tile just inside; walking from a
+//           through the wall to b slips you in (you find it by bumping walls).
+//   exitTile — a chamber tile that, once you step on it, flings you to a random
+//           room somewhere else on the map.
+function buildPassage(reachArr) {
+  const f = FLOORS[0], reach = new Set(reachArr);
+  const chamber = [];
+  for (let y = 0; y < f.H; y++) for (let x = 0; x < f.W; x++) if (f.owner[y][x] === SEALED_ROOM) chamber.push({ x, y });
+  const doors = [];
+  for (const c of chamber) for (const [dx, dy] of DIRS4) {
+    const wx = c.x + dx, wy = c.y + dy, ox = c.x + 2 * dx, oy = c.y + 2 * dy;
+    if (wy < 0 || wx < 0 || wy >= f.H || wx >= f.W || f.tiles[wy][wx] !== TILE.WALL) continue;
+    if (oy < 0 || ox < 0 || oy >= f.H || ox >= f.W || f.tiles[oy][ox] === TILE.WALL) continue;
+    if (reach.has(f.owner[oy][ox])) doors.push({ a: { x: ox, y: oy }, b: { x: c.x, y: c.y } });
+  }
+  const entry = pick(doors);
+  const rest = chamber.filter(c => !(c.x === entry.b.x && c.y === entry.b.y));
+  const exitTile = pick(rest.length ? rest : chamber);
+  return { entry, exitTile };
 }
 
 const DIR_WORD = { N: 'north', S: 'south', E: 'east', W: 'west', U: 'upstairs', D: 'downstairs' };
@@ -280,8 +303,8 @@ function newGame(names, diffKey) {
     }
   }
 
-  // assign each group a distinct true room (not the murder room)
-  const availRooms = shuffle([...Array(ROOMS.length).keys()].filter(r => r !== murderRoom));
+  // assign each group a distinct true room (not the murder room, not the passage)
+  const availRooms = shuffle([...Array(ROOMS.length).keys()].filter(r => r !== murderRoom && r !== SEALED_ROOM));
   const people = {}; // name -> record
   people[murdererName] = { name: murdererName, isMurderer: true, trueRoom: murderRoom, group: [] };
 
@@ -316,12 +339,9 @@ function newGame(names, diffKey) {
   const positions = {};
   suspects.forEach(n => { positions[n] = pickReach(); });
 
-  // A secret passage: a hidden panel (found by probing the wallpaper) opens a
-  // shortcut to the sealed Sewing Room — the one room with no ordinary doorway.
-  // It stays hidden (no ADJ link, no tile) until you discover it.
-  const panelRoom = pick(reach.filter(r => r !== SEALED_ROOM && r !== murderRoom)) ?? pickReach();
-  const exitRoom  = SEALED_ROOM;
-  const passage = { panelRoom, exitRoom, found: false, probes: 0, used: false };
+  // A secret passage inside the walls: a hidden door you find by walking into the
+  // wall at the right spot, and a spot inside that flings you to a random room.
+  const passage = buildPassage(reach);
 
   G = {
     diff, diffKey,
@@ -394,11 +414,6 @@ function renderMap() {
     });
   }
   overlay[G.py + ',' + G.px] = { ch: FACE_YOU, cls: 'g-you' };   // you
-  // open-passage endpoints show a '=' where you can slip through
-  const P = G.passage;
-  if (P.found) [P.panelRoom, P.exitRoom].forEach(r => {
-    const t = ROOM_META[r].passageTile; if (t && !overlay[t.y + ',' + t.x]) overlay[t.y + ',' + t.x] = { ch: '=', cls: 'g-pass' };
-  });
 
   FLOORS.forEach((f) => {
     const wrap = document.createElement('div');
@@ -439,10 +454,6 @@ function describeRoom() {
   const i = G.player;
   const flavor = ROOM_FLAVOR[ROOMS[i]] || '';
   log(`<span class="hl">${ROOMS[i]}.</span> ${flavor}`, 'evt');
-
-  const P = G.passage;
-  if (i === P.panelRoom && !P.found) log(`In one corner the wallpaper's pattern doesn't quite line up. <span class="dim">(SEARCH)</span>`, 'clue');
-  if (P.found && (i === P.panelRoom || i === P.exitRoom)) log(`A <span class="clue">secret passage</span> stands open here. <span class="dim">(PASSAGE)</span>`, 'clue');
 
   const here = G.suspects.filter(n => G.positions[n] === i);
   if (here.length) log(`With you: <span class="cyan">${here.join(', ')}</span>. <span class="dim">(QUESTION a name)</span>`);
@@ -504,26 +515,45 @@ function spendTurn() {
    Actions
    -------------------------------------------------------------------------- */
 
-// Walk the dot one tile. Walls block; stepping through a doorway into a new room
-// costs a move (spends a turn) and triggers that room's arrival logic.
+// Walk the dot one tile. Walls block; stepping into a new room costs a move.
 function stepDir(dx, dy) {
   if (G.over) return;
-  const f = FLOORS[G.pfloor];
+  const f = FLOORS[0];
+  const P = G.passage, E = P.entry;
+
+  // The secret door: pressing into the wall at exactly the right spot slips you
+  // into the hidden passage (there's no marker — you find it by trying walls).
+  if (G.px === E.a.x && G.py === E.a.y && dx === Math.sign(E.b.x - E.a.x) && dy === Math.sign(E.b.y - E.a.y)) {
+    G.px = E.b.x; G.py = E.b.y;
+    log('You lean on the wall at just the right spot — and it gives. You slip into a hidden passage.', 'clue');
+    enterRoom(SEALED_ROOM);
+    return;
+  }
+
   const nx = G.px + dx, ny = G.py + dy;
   if (ny < 0 || ny >= f.H || nx < 0 || nx >= f.W) return;
   if (f.tiles[ny][nx] === TILE.WALL) return;   // blocked, silently
   G.px = nx; G.py = ny;
-  if (f.tiles[ny][nx] === TILE.PASSAGE) return takePassage();  // step into the open panel
-  const ri = f.owner[ny][nx];                  // -1 on a doorway between rooms
+
+  // Inside the passage, one spot in the dark drops you out into a random room.
+  if (G.player === SEALED_ROOM && nx === P.exitTile.x && ny === P.exitTile.y) {
+    const dest = pick([...reachableRooms()].filter(r => r !== SEALED_ROOM));
+    const c = ROOM_META[dest].center;
+    G.px = c.x; G.py = c.y;
+    log('The floor drops away in the dark — you tumble through and stagger out somewhere new.', 'clue');
+    enterRoom(dest);
+    return;
+  }
+
+  const ri = f.owner[ny][nx];
   if (ri >= 0 && ri !== G.player) enterRoom(ri);
   else renderMap();                            // just redraw the dot moving
 }
 
-// Arriving in a new room: the turn-costing event (also used by stairs/passage).
-function enterRoom(target, via) {
+// Arriving in a new room: the turn-costing event.
+function enterRoom(target) {
   G.player = target;
   G.visited.add(target);
-  if (via === 'passage') log(`You slip out of the passage into the <span class="hl">${ROOMS[target]}</span>.`, 'you');
   describeRoom();
   // A guest lingering at the scene often — but not always — gives it away by
   // staring at the floor. (You can also just spot the stains yourself: EXAMINE.)
@@ -536,72 +566,14 @@ function enterRoom(target, via) {
   spendTurn();
 }
 
-// Move the dot to another room and re-centre it there (used by the passage).
-function warpTo(tgt, via) {
-  const c = ROOM_META[tgt].center;
-  G.pfloor = 0;
-  G.px = c.x; G.py = c.y;
-  enterRoom(tgt, via);
-}
-
 // One story — the "stairs" are just the front steps at the two entrances.
 function takeStairs() {
   if (G.over) return;
   log('This is a single-story estate — the staircases are only the front steps at the two entrances. There is no floor above or below.', 'sys');
 }
 
-// ---- Secret passage ----------------------------------------------------------
-
-// Probe the wallpaper in the panel room; a few tries and the panel slides open.
-function searchWalls() {
-  if (G.over) return;
-  const P = G.passage;
-  if (G.player !== P.panelRoom || P.found) {
-    log('You search the walls, but find nothing out of the ordinary here.', 'sys');
-    return;
-  }
-  P.probes++;
-  if (P.probes < 2) {
-    log('You press along the odd patch of wallpaper. Something shifts behind it — but it doesn\'t give. Try again.', 'clue');
-    spendTurn();
-    return;
-  }
-  // opens
-  P.found = true;
-  ADJ[P.panelRoom].P = P.exitRoom;
-  ADJ[P.exitRoom].P = P.panelRoom;
-  openPassageTile(P.panelRoom);
-  openPassageTile(P.exitRoom);
-  addMarker(P.panelRoom, '<span class="g-pass">=</span>');
-  addMarker(P.exitRoom, '<span class="g-pass">=</span>');
-  log(`A panel clicks and slides smoothly aside, revealing a dark <span class="clue">secret passage</span>. It runs all the way to the <span class="hl">${ROOMS[P.exitRoom]}</span> — the sealed room with no door. (Step into it, or use PASSAGE.)`, 'clue');
-  spendTurn();
-}
-
-function openPassageTile(room) {
-  const c = ROOM_META[room].center;            // the passage mouth sits at the room centre
-  FLOORS[0].tiles[c.y][c.x] = TILE.PASSAGE;
-  ROOM_META[room].passageTile = { x: c.x, y: c.y };
-}
-
-// Travel through the secret passage from either end.
-function takePassage() {
-  if (G.over) return;
-  const P = G.passage;
-  const tgt = (ADJ[G.player] || {}).P;
-  if (!P.found || tgt == null) { log('There is no secret passage here.', 'sys'); return; }
-  if (!P.used) {
-    P.used = true;
-    log('You slip into the passage. In the dark you edge past a strange black obelisk on the floor — no blood, no answers, just cold stone.', 'clue');
-    const lurker = G.suspects.find(n => G.positions[n] === tgt);
-    if (lurker) log(`Halfway through, a face stares out at you from the gloom — the fright of your life. It is only <span class="cyan">${lurker}</span>.`, 'clue');
-  }
-  warpTo(tgt, 'passage');
-}
-
 function moveDir(d) {
   if (d === 'U' || d === 'D') return takeStairs(d);
-  if (d === 'P') return takePassage();
   const v = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] }[d];
   if (v) stepDir(v[0], v[1]);
 }
@@ -807,15 +779,12 @@ function runCommand(raw) {
     case 'west':  return moveDir('W');
     case 'up': case 'upstairs':     return moveDir('U');
     case 'down': case 'downstairs': return moveDir('D');
-    case 'passage': case 'secret':  return moveDir('P');
     case 'go': case 'move': {
-      const d = { north:'N', south:'S', east:'E', west:'W', up:'U', down:'D', upstairs:'U', downstairs:'D', passage:'P' }[arg.toLowerCase()];
+      const d = { north:'N', south:'S', east:'E', west:'W', up:'U', down:'D', upstairs:'U', downstairs:'D' }[arg.toLowerCase()];
       return d ? moveDir(d) : log('Go where? Try: GO NORTH / SOUTH / EAST / WEST.', 'sys');
     }
     case 'look': return doLook();
-    case 'search': case 'probe': case 'feel': return searchWalls();
     case 'ex': case 'examine': case 'inspect': {
-      if (/wall|panel|paper|passage/.test(arg)) return searchWalls();
       if (!arg || /room|here|around/.test(arg)) { if (G.objects[G.player]) return examineObject(G.player); return doLook(); }
       if (/glass|magnif/.test(arg)) return takeGlass();
       return examineObject(G.player);
@@ -855,13 +824,11 @@ function showHelp() {
     'QUESTION (Q) &lt;name&gt; — ask a guest for their alibi (don\'t overdo it!)',
     'LOOK             — describe the current room again',
     'TAKE glass       — pick up the magnifying glass',
-    'SEARCH           — probe the walls for a hidden panel (somewhere the wallpaper looks off)',
-    'PASSAGE          — slip through a secret passage you\'ve opened',
     'NOTEBOOK         — review the clues and alibis you\'ve gathered',
     'ACCUSE           — name the murderer, weapon, and room (one shot — be right)',
     'WAIT             — let a moment pass',
   ].forEach(t => log(t, 'sys'));
-  log('<span class="dim">Find the bloodstained room, the weapon, and spot the liar (murderer). Watch for a guest staring at the floor.</span>', 'sys');
+  log('<span class="dim">Find the bloodstained room, the weapon, and spot the liar (murderer). Watch for a guest staring at the floor — and for a wall that isn\'t quite solid.</span>', 'sys');
 }
 
 /* --------------------------------------------------------------------------
@@ -887,7 +854,7 @@ function startGame() {
 
   // test-only hook (opt-in via ?sleuthtest in the URL) — never active in normal play
   if (typeof location !== 'undefined' && location.search.includes('sleuthtest')) {
-    window.__sleuth = { get G() { return G; }, get ROOMS() { return ROOMS; }, get FLOORS() { return FLOORS; }, get ADJ() { return ADJ; }, get META() { return ROOM_META; }, confirmAccuse, searchWalls, takePassage };
+    window.__sleuth = { get G() { return G; }, get ROOMS() { return ROOMS; }, get FLOORS() { return FLOORS; }, get ADJ() { return ADJ; }, get META() { return ROOM_META; }, confirmAccuse };
   }
 }
 

@@ -97,12 +97,18 @@ for (const set of NAME_SETS) {
     for (const ri of reach) { const c = META[ri].center; if (!seenT.has(key(c.x, c.y))) { tileFail = true; break; } }
     if (tileFail) { fails++; console.error('FAIL: a reachable room is not walkable from the door'); continue; }
 
-    // 9) the secret passage is hidden at the start and leads to the sealed room
+    // 9) the secret passage: a hidden door from a reachable tile through a wall
+    //    into the sealed chamber, and an exit spot inside that chamber.
     const P = G.passage;
-    if (!P || P.panelRoom == null || P.exitRoom == null) { fails++; console.error('FAIL: no secret passage'); continue; }
-    if (P.panelRoom === P.exitRoom) { fails++; console.error('FAIL: passage endpoints identical'); continue; }
-    if (reach.has(P.exitRoom)) { fails++; console.error('FAIL: passage exit is not the sealed room'); continue; }
-    if (P.found || ADJ[P.panelRoom].P != null || ADJ[P.exitRoom].P != null) { fails++; console.error('FAIL: passage not hidden at start'); continue; }
+    if (!P || !P.entry || !P.entry.a || !P.entry.b || !P.exitTile) { fails++; console.error('FAIL: no secret passage'); continue; }
+    // the door's outside tile `a` is a reachable-room floor tile; inside tile `b`
+    // and the exit spot are both in the sealed chamber; a wall sits between them.
+    if (!reach.has(f.owner[P.entry.a.y][P.entry.a.x])) { fails++; console.error('FAIL: passage entrance not reachable'); continue; }
+    if (f.owner[P.entry.b.y][P.entry.b.x] !== 1) { fails++; console.error('FAIL: passage inside not the chamber'); continue; }
+    if (f.owner[P.exitTile.y][P.exitTile.x] !== 1) { fails++; console.error('FAIL: passage exit not in the chamber'); continue; }
+    const mid = { x: (P.entry.a.x + P.entry.b.x) / 2, y: (P.entry.a.y + P.entry.b.y) / 2 };
+    if (f.tiles[mid.y][mid.x] !== 0) { fails++; console.error('FAIL: no wall in the secret door'); continue; }
+    if (P.exitTile.x === P.entry.b.x && P.exitTile.y === P.entry.b.y) { fails++; console.error('FAIL: exit spot is the entrance'); continue; }
   }
 }
 

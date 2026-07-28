@@ -61,14 +61,16 @@ walkable from the front door.
 
 ### The secret passage
 
-One room — the **Sewing Room** — is sealed: it has no ordinary doorway, matching
-the original's rooms with "no apparent opening." The only way in is a **secret
-passage**. Somewhere the wallpaper's pattern "doesn't quite line up in one
-corner" — **`SEARCH`** that room and, after a little probing, a panel slides
-aside to reveal a hidden route through to the sealed room. Once open it's marked
-`=` at both ends; step into it or use **`PASSAGE`** to slip through — a shortcut
-only *you* know about (the guests never use it). Mind the black obelisk in the
-dark.
+Hidden inside the walls is a **secret passage** — a sealed chamber with no
+ordinary doorway (matching the original's rooms with "no apparent opening"). It
+isn't a command and it isn't marked. You find it the way you'd expect to: by
+**walking into the wall** at different points. One spot along the wall — fixed at
+the start of each game — quietly gives way and slips you *inside* the passage.
+
+Once in, you're in the dark with a cold stone obelisk, not in any normal room.
+Feel your way around: one spot on the floor (also fixed at the start) **drops you
+out into a random room** somewhere else on the map. It's an unpredictable
+shortcut only *you* can use — the guests never touch it.
 
 ## How to play
 
