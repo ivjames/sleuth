@@ -255,6 +255,61 @@ function roamNeighbors(i) {
   if (i === P.entryRoom) return [...base, SEALED_ROOM];
   return base;
 }
+
+/* --------------------------------------------------------------------------
+   Guests live on real tiles (never more than one to a tile) and roam the house
+   tile by tile. You only see a guest once you're in the same room as them, and
+   you question whoever you're standing right next to.
+   -------------------------------------------------------------------------- */
+
+// the room (zone) that owns a guest's current tile
+function guestZone(n) { const p = G.gpos[n]; return FLOORS[0].owner[p.y][p.x]; }
+// guests whose tile is in room i
+function guestsInRoom(i) { return G.suspects.filter(n => guestZone(n) === i); }
+// guests standing on a tile orthogonally adjacent to you (walk up to QUESTION)
+function adjacentGuests() {
+  return G.suspects.filter(n => {
+    const p = G.gpos[n];
+    return Math.abs(p.x - G.px) + Math.abs(p.y - G.py) === 1;
+  });
+}
+// which guest (if any) occupies a tile — used to keep one guest per tile
+function tileOccupant(x, y, exclude) {
+  for (const n of G.suspects) {
+    if (n === exclude) continue;
+    const p = G.gpos[n];
+    if (p.x === x && p.y === y) return n;
+  }
+  return null;
+}
+// a free floor tile inside room i (no guest, not you) — for placing/relocating
+function freeTileIn(i, self) {
+  const f = FLOORS[0], t = [];
+  for (let y = 0; y < f.H; y++) for (let x = 0; x < f.W; x++)
+    if (f.owner[y][x] === i && !tileOccupant(x, y, self) && !(G.px === x && G.py === y)) t.push({ x, y });
+  return t.length ? pick(t) : null;
+}
+// move one guest one tile: an open, unoccupied neighbour (they can also slip
+// through the secret door, and the passage's exit spot flings them out too)
+function moveGuest(n) {
+  const f = FLOORS[0], P = G.passage, E = P.entry, p = G.gpos[n];
+  const open = (x, y) => x >= 0 && y >= 0 && x < f.W && y < f.H &&
+    f.tiles[y][x] !== TILE.WALL && !(G.px === x && G.py === y) && !tileOccupant(x, y, n);
+  const cands = [];
+  for (const [dx, dy] of DIRS4) { const nx = p.x + dx, ny = p.y + dy; if (open(nx, ny)) cands.push({ x: nx, y: ny }); }
+  // the hidden door: cross the wall between its outside tile (a) and chamber tile (b)
+  if (p.x === E.a.x && p.y === E.a.y && open(E.b.x, E.b.y)) cands.push({ x: E.b.x, y: E.b.y });
+  if (p.x === E.b.x && p.y === E.b.y && open(E.a.x, E.a.y)) cands.push({ x: E.a.x, y: E.a.y });
+  if (!cands.length) return;
+  const dst = pick(cands);
+  G.gpos[n] = dst;
+  // inside the passage, the exit spot drops a guest out into a random room
+  if (f.owner[dst.y][dst.x] === SEALED_ROOM && dst.x === P.exitTile.x && dst.y === P.exitTile.y) {
+    const dest = pick([...reachableRooms()].filter(r => r !== SEALED_ROOM));
+    const c = ROOM_META[dest].center;
+    G.gpos[n] = freeTileIn(dest, n) || { x: c.x, y: c.y };
+  }
+}
 const $ = sel => document.querySelector(sel);
 
 /* --------------------------------------------------------------------------
@@ -350,10 +405,29 @@ function newGame(names, diffKey) {
   const chosenDecoys = shuffle(DECOYS).slice(0, 4);
   chosenDecoys.forEach((d, i) => { if (decoyRooms[i] != null) objects[decoyRooms[i]] = { kind: 'decoy', label: d, examined: false }; });
 
-  // suspects' CURRENT positions (they roam; separate from their alibi trueRoom).
-  // They use ordinary doors, never the passage, so they stay in reachable rooms.
-  const positions = {};
-  suspects.forEach(n => { positions[n] = pickReach(); });
+  // suspects' CURRENT tile positions (they roam the house tile by tile; this is
+  // separate from their alibi trueRoom). Each starts on a distinct floor tile,
+  // spread across reachable rooms — never the sealed passage, never your doorway.
+  const gpos = {};
+  {
+    const f = FLOORS[0];
+    const rooms = shuffle([...reach].filter(r => r !== SEALED_ROOM));
+    const tilesIn = i => {
+      const t = [];
+      for (let y = 0; y < f.H; y++) for (let x = 0; x < f.W; x++)
+        if (f.owner[y][x] === i && !(x === START_TILE.x && y === START_TILE.y)) t.push({ x, y });
+      return t;
+    };
+    const used = new Set();
+    suspects.forEach((n, idx) => {
+      for (let k = 0; k < rooms.length && !gpos[n]; k++) {
+        const room = rooms[(idx + k) % rooms.length];
+        const cand = shuffle(tilesIn(room)).find(t => !used.has(t.y * f.W + t.x));
+        if (cand) { gpos[n] = cand; used.add(cand.y * f.W + cand.x); }
+      }
+      if (!gpos[n]) { const c = ROOM_META[rooms[idx % rooms.length]].center; gpos[n] = { x: c.x, y: c.y }; }
+    });
+  }
 
   // A secret passage inside the walls: a hidden door you find by walking into the
   // wall at the right spot, and a spot inside that flings you to a random room.
@@ -364,7 +438,7 @@ function newGame(names, diffKey) {
     stories: STORIES,        // 1 or 2 — the house drawn this game
     suspects, murdererName, weapon, victim,
     murderRoom, weaponRoom, weaponAtScene, glassRoom,
-    people, objects, positions, passage,
+    people, objects, gpos, passage,
     player: FLOORS[0].owner[START_TILE.y][START_TILE.x],  // ROOM you're standing in
     pfloor: 0,                                            // one story: always floor 0
     px: START_TILE.x, py: START_TILE.y,                   // the dot's tile (front door)
@@ -414,22 +488,16 @@ function renderMap() {
   const map = $('#map');
   map.innerHTML = '';
 
-  // overlays: you, plus any guests who share YOUR room (guests elsewhere aren't
-  // shown — as in the original, you only see who's here once you walk in). Spread
-  // them across the room's free floor tiles so they never stack on one cell.
+  // overlays: you, plus any guests standing in YOUR room, drawn at their real
+  // tiles (guests elsewhere aren't shown — you only see who's here once you've
+  // crossed into the room). One guest per tile, so no one ever stacks or lines up.
   const overlay = {};
   const f0 = FLOORS[0];
-  const here = G.suspects.filter(n => G.positions[n] === G.player);
-  if (here.length) {
-    const spots = [];
-    for (let y = 0; y < f0.H; y++) for (let x = 0; x < f0.W; x++)
-      if (f0.owner[y][x] === G.player && !(x === G.px && y === G.py)) spots.push([x, y]);
-    here.forEach((n, i) => {
-      const t = spots.length ? spots[Math.floor(((i + 0.5) * spots.length) / here.length)] : [G.px, G.py];
-      overlay[t[1] + ',' + t[0]] = { ch: FACE_NPC, cls: 'g-guest' };
-    });
+  for (const n of G.suspects) {
+    const p = G.gpos[n];
+    if (f0.owner[p.y][p.x] === G.player) overlay[p.y + ',' + p.x] = { ch: FACE_NPC, cls: 'g-guest' };
   }
-  overlay[G.py + ',' + G.px] = { ch: FACE_YOU, cls: 'g-you' };   // you
+  overlay[G.py + ',' + G.px] = { ch: FACE_YOU, cls: 'g-you' };   // you (drawn last, wins the tile)
 
   FLOORS.forEach((f) => {
     const wrap = document.createElement('div');
@@ -526,8 +594,8 @@ function describeRoom() {
   const flavor = ROOM_FLAVOR[ROOMS[i]] || '';
   log(`<span class="hl">${ROOMS[i]}.</span> ${flavor}`, 'evt');
 
-  const here = G.suspects.filter(n => G.positions[n] === i);
-  if (here.length) log(`With you: <span class="cyan">${here.join(', ')}</span>. <span class="dim">(QUESTION a name)</span>`);
+  const here = guestsInRoom(i);
+  if (here.length) log(`Here: <span class="cyan">${here.join(', ')}</span>. <span class="dim">(walk up beside one and QUESTION)</span>`);
 
   if (i === G.glassRoom && !G.hasGlass) log(`A <span class="clue">magnifying glass</span> glints on a table. <span class="dim">(TAKE glass)</span>`, 'clue');
   const obj = G.objects[i];
@@ -561,18 +629,18 @@ function spendTurn() {
   if (G.over) return;
   G.turnsLeft--;
 
-  // guests roam to an adjacent room (or linger). They mostly use ordinary
-  // doorways, but can also slip through the passage — so you might meet one there.
+  // guests wander the house one tile at a time (some linger). They use ordinary
+  // doorways, but can also slip through the secret door — so you might meet one
+  // in the dark. One guest per tile, so they never bunch up.
   for (const n of G.suspects) {
-    const adj = roamNeighbors(G.positions[n]);
-    if (Math.random() < 0.7 && adj.length) G.positions[n] = pick(adj);
+    if (Math.random() < 0.75) moveGuest(n);
   }
 
   // danger checks
   if (G.turnsLeft <= 0) { return death('Time ran out. As you turned a corner, a shadow fell across you — and the killer struck from behind. The case dies with you.'); }
   if (G.turnsLeft <= 5) log(`The clock is against you — only <span class="bad">${G.turnsLeft}</span> moves before the murderer acts.`, 'warn');
 
-  if (G.hunting && G.positions[G.murdererName] === G.player) {
+  if (G.hunting && guestZone(G.murdererName) === G.player) {
     return death(`You are alone with the killer — and they know you're closing in. ${G.murdererName} lunges. You never finish the sentence.`);
   }
   if (G.hunting && Math.random() < 0.5) {
@@ -629,7 +697,7 @@ function enterRoom(target) {
   // A guest lingering at the scene often — but not always — gives it away by
   // staring at the floor. (You can also just spot the stains yourself: EXAMINE.)
   if (target === G.murderRoom && !G.knownRoom) {
-    const guestsHere = G.suspects.filter(n => G.positions[n] === target);
+    const guestsHere = guestsInRoom(target);
     if (guestsHere.length && Math.random() < 0.7) {
       log(`${pick(guestsHere)} stands oddly still, staring down at the floor…`, 'clue');
     }
@@ -652,7 +720,7 @@ function moveDir(d) {
 function doLook() {
   describeRoom();
   const i = G.player;
-  const here = G.suspects.filter(n => G.positions[n] === i);
+  const here = guestsInRoom(i);
   if (!here.length && !G.objects[i] && !(i === G.glassRoom && !G.hasGlass)) log('Nothing else here catches your eye.', 'sys');
 }
 
@@ -708,11 +776,23 @@ function examineObject(room) {
   }
 }
 
-function questionPerson(name) {
+function questionPerson(nameArg) {
   if (G.over) return;
-  const canon = matchName(name);
-  if (!canon) { log(`There is no guest by that name here.`, 'sys'); return; }
-  if (G.positions[canon] !== G.player) { log(`${canon} is not in this room. Find them first.`, 'sys'); return; }
+  const beside = adjacentGuests();          // you question whoever you're next to
+  let canon;
+  if (nameArg) {
+    canon = matchName(nameArg);
+    if (!canon) { log(`There is no guest by that name.`, 'sys'); return; }
+    if (!beside.includes(canon)) {
+      if (guestZone(canon) === G.player) log(`${canon} is across the room — step right beside them first.`, 'sys');
+      else log(`${canon} isn't here. Find them and stand next to them.`, 'sys');
+      return;
+    }
+  } else {
+    if (!beside.length) { log('No one is standing next to you. Walk up beside a guest, then QUESTION.', 'sys'); return; }
+    if (beside.length > 1) { log(`More than one guest is beside you — <span class="cyan">${beside.join(', ')}</span>. QUESTION which? (say a name)`, 'sys'); return; }
+    canon = beside[0];
+  }
 
   const p = G.people[canon];
   G.questioned[canon] = (G.questioned[canon] || 0) + 1;
@@ -863,10 +943,9 @@ function runCommand(raw) {
     case 'take': case 'get': case 'grab': case 'pick':
       if (/glass|magnif/.test(arg) || !arg) return takeGlass();
       return log("You can't take that.", 'sys');
-    case 'q': case 'question': case 'ask': case 'talk': case 'interrogate': {
-      if (!arg) return log('Question whom? e.g. QUESTION Dr. Crane', 'sys');
+    case 'q': case 'question': case 'ask': case 'talk': case 'interrogate':
+      // no name needed — you question whoever you're standing next to
       return questionPerson(arg.replace(/^(to|the)\s+/, ''));
-    }
     case 'notebook': case 'notes': return dumpNotebook();
     case 'accuse': case 'j\'accuse': return openAccuse();
     case 'wait': log('You wait, listening…', 'you'); return spendTurn();
@@ -892,7 +971,7 @@ function showHelp() {
   [
     'Move:            the arrow keys walk you (the yellow face) through the rooms',
     'EXAMINE (EX)     — inspect the clue here (bloodstains reveal the ROOM; the glass reveals more)',
-    'QUESTION (Q) &lt;name&gt; — ask a guest for their alibi (don\'t overdo it!)',
+    'QUESTION (Q)     — walk up beside a guest, then question them for their alibi (don\'t overdo it!)',
     'LOOK             — describe the current room again',
     'TAKE glass       — pick up the magnifying glass',
     'NOTEBOOK         — review the clues and alibis you\'ve gathered',
