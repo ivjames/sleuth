@@ -1,29 +1,19 @@
-# SleuthVGA — embedded pixel font
+# Embedded font
 
-`sleuthvga.woff2` is the font that renders the estate map (`.floormap`). The same
-bytes are embedded as a base64 `@font-face` in `styles.css`, so the game is
-self-contained and needs no network or local font.
+`sourcecodepro-medium.woff2` renders the estate map (`.floormap`). It is
+**Source Code Pro** (Medium / weight 500) by Adobe — the font the map was
+authored in, so the block-wall glyphs (`█ ▀ ▄ ▌ ▐` and the `▛ ▜ ▙ ▟` corners)
+and the `☺`/`☻` faces render exactly as drawn.
 
-## How it was built
+The file is **subset** to only the glyphs the map uses (basic ASCII, box drawing
+`U+2500–257F`, block elements `U+2580–259F`, `·`, and the two smileys) to keep it
+small, then embedded as a base64 `@font-face` in `styles.css` so the game is
+self-contained. A locally installed Source Code Pro, if present, wins via
+`local()`.
 
-The glyph bitmaps are the classic **IBM VGA 8×16** CP437 ROM, taken from the
-[`pcface`](https://www.npmjs.com/package/pcface) package (`oldschool-vga-8x16`),
-which is MIT-licensed (© 2023 Susam Pal). Those bitmaps in turn come from
-VileR's **Ultimate Oldschool PC Font Pack** (https://int10h.org/oldschool-pc-fonts/),
-licensed **CC BY-SA 4.0**.
+## License
 
-CP437 has full/half blocks (`█ ▀ ▄ ▌ ▐`) but not the *quadrant* block glyphs
-(`▖ ▗ ▘ ▝ ▚ ▞ ▛ ▜ ▙ ▟`) that the map uses for room corners, so those ten glyphs
-were synthesised (each is the corresponding 2×2 quadrant fill of the 8×16 cell).
-A small `fontTools` script drew one filled rectangle per lit pixel and emitted the
-woff2.
-
-## Attribution / license
-
-- Bitmaps: **Ultimate Oldschool PC Font Pack** by VileR, **CC BY-SA 4.0**.
-- Extraction helper: `pcface` by Susam Pal, MIT.
-- The synthesised quadrant glyphs and the woff2 build are released under the same
-  **CC BY-SA 4.0** to respect share-alike on the font asset.
-
-The rest of the project (code, markup) remains under the repository's MIT license;
-CC BY-SA 4.0 applies only to this font asset.
+**Source Code Pro** © 2010–2019 Adobe (http://www.adobe.com/), with Reserved
+Font Name "Source". Licensed under the **SIL Open Font License, Version 1.1**
+(https://scripts.sil.org/OFL). The OFL covers this font asset; the rest of the
+project remains under the repository's MIT license.

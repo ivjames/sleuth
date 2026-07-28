@@ -131,8 +131,7 @@ Thereafter `sleuth deploy` does git pull → install → pm2 restart.
 Original **Sleuth** © 1983 Eric N. Miller / Norland Software. This is an
 independent, from-scratch homage — no original code or assets are used.
 
-The map is drawn in a CP437 pixel font (**SleuthVGA**) built from the classic IBM
-VGA 8×16 ROM via [`pcface`](https://www.npmjs.com/package/pcface) (MIT), whose
-bitmaps come from VileR's [Ultimate Oldschool PC Font Pack](https://int10h.org/oldschool-pc-fonts/)
-(CC BY-SA 4.0). See [`fonts/NOTICE.md`](fonts/NOTICE.md) for details and the
-synthesised quadrant-block glyphs.
+The map is drawn in **Source Code Pro** (Medium) by Adobe — the font it was
+authored in — subset and embedded so it renders exactly as designed. Source Code
+Pro is licensed under the SIL Open Font License 1.1; see
+[`fonts/NOTICE.md`](fonts/NOTICE.md).
