@@ -155,8 +155,10 @@ function reachableRooms() {
 //   entry — a hidden door in the sealed chamber's wall. `a` is the floor tile
 //           just outside it, `b` the chamber tile just inside; walking from a
 //           through the wall to b slips you in (you find it by bumping walls).
-//   exitTile — a chamber tile that, once you step on it, flings you to a random
-//           room somewhere else on the map.
+//   exitTile — a chamber tile that, once you step on it, drops you out into
+//           exitDest, a single far room fixed for the whole game.
+//   entryRoom / exitDest — used so guests can occasionally wander through the
+//           passage too, so you can run into one in the dark.
 function buildPassage(reachArr) {
   const f = FLOORS[0], reach = new Set(reachArr);
   const chamber = [];
@@ -169,9 +171,12 @@ function buildPassage(reachArr) {
     if (reach.has(f.owner[oy][ox])) doors.push({ a: { x: ox, y: oy }, b: { x: c.x, y: c.y } });
   }
   const entry = pick(doors);
+  const entryRoom = f.owner[entry.a.y][entry.a.x];
   const rest = chamber.filter(c => !(c.x === entry.b.x && c.y === entry.b.y));
   const exitTile = pick(rest.length ? rest : chamber);
-  return { entry, exitTile };
+  const destCands = reachArr.filter(r => r !== SEALED_ROOM && r !== entryRoom);
+  const exitDest = pick(destCands.length ? destCands : reachArr.filter(r => r !== SEALED_ROOM));
+  return { entry, entryRoom, exitTile, exitDest };
 }
 
 const DIR_WORD = { N: 'north', S: 'south', E: 'east', W: 'west', U: 'upstairs', D: 'downstairs' };
@@ -239,6 +244,18 @@ const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0
 
 // direction -> neighbouring room index, for the current mansion (N/S/E/W + stairs)
 const neighbors = i => ADJ[i] || {};
+
+// Rooms a GUEST may roam to from room `i`: ordinary doorways, plus the secret
+// passage links (the passage chamber connects to its entry room and its exit
+// room), so guests occasionally turn up inside the passage.
+function roamNeighbors(i) {
+  const base = Object.values(ADJ[i] || {});
+  const P = G && G.passage;
+  if (!P) return base;
+  if (i === SEALED_ROOM) return [...base, P.entryRoom, P.exitDest];
+  if (i === P.entryRoom || i === P.exitDest) return [...base, SEALED_ROOM];
+  return base;
+}
 const $ = sel => document.querySelector(sel);
 
 /* --------------------------------------------------------------------------
@@ -490,11 +507,10 @@ function spendTurn() {
   if (G.over) return;
   G.turnsLeft--;
 
-  // guests roam to an adjacent room (or linger). They use ordinary doors and
-  // stairs, never the secret passage — only you know about that.
+  // guests roam to an adjacent room (or linger). They mostly use ordinary
+  // doorways, but can also slip through the passage — so you might meet one there.
   for (const n of G.suspects) {
-    const a = neighbors(G.positions[n]);
-    const adj = Object.keys(a).filter(d => d !== 'P').map(d => a[d]);
+    const adj = roamNeighbors(G.positions[n]);
     if (Math.random() < 0.7 && adj.length) G.positions[n] = pick(adj);
   }
 
@@ -535,13 +551,12 @@ function stepDir(dx, dy) {
   if (f.tiles[ny][nx] === TILE.WALL) return;   // blocked, silently
   G.px = nx; G.py = ny;
 
-  // Inside the passage, one spot in the dark drops you out into a random room.
+  // Inside the passage, one spot in the dark drops you out into a far room.
   if (G.player === SEALED_ROOM && nx === P.exitTile.x && ny === P.exitTile.y) {
-    const dest = pick([...reachableRooms()].filter(r => r !== SEALED_ROOM));
-    const c = ROOM_META[dest].center;
+    const c = ROOM_META[P.exitDest].center;
     G.px = c.x; G.py = c.y;
     log('The floor drops away in the dark — you tumble through and stagger out somewhere new.', 'clue');
-    enterRoom(dest);
+    enterRoom(P.exitDest);
     return;
   }
 

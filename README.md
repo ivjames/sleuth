@@ -69,8 +69,9 @@ the start of each game — quietly gives way and slips you *inside* the passage.
 
 Once in, you're in the dark with a cold stone obelisk, not in any normal room.
 Feel your way around: one spot on the floor (also fixed at the start) **drops you
-out into a random room** somewhere else on the map. It's an unpredictable
-shortcut only *you* can use — the guests never touch it.
+out into a far room** — a single destination chosen for the whole game. It's a
+shortcut, but you're not the only one who knows it: **a guest may wander into the
+passage too**, so mind who you meet in the dark.
 
 ## How to play
 
