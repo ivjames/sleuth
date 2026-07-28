@@ -266,6 +266,12 @@ function roamNeighbors(i) {
 function guestZone(n) { const p = G.gpos[n]; return FLOORS[0].owner[p.y][p.x]; }
 // guests whose tile is in room i
 function guestsInRoom(i) { return G.suspects.filter(n => guestZone(n) === i); }
+// is another guest already in room `zone`? (we keep at most ONE guest per room,
+// so you only ever meet one guest at a time)
+function zoneHasGuest(zone, self) {
+  for (const n of G.suspects) { if (n === self) continue; if (guestZone(n) === zone) return true; }
+  return false;
+}
 // guests standing on a tile orthogonally adjacent to you (walk up to QUESTION)
 function adjacentGuests() {
   return G.suspects.filter(n => {
@@ -293,8 +299,12 @@ function freeTileIn(i, self) {
 // through the secret door, and the passage's exit spot flings them out too)
 function moveGuest(n) {
   const f = FLOORS[0], P = G.passage, E = P.entry, p = G.gpos[n];
+  const curZone = f.owner[p.y][p.x];
+  // a tile is open if it's floor, not you, not another guest's tile, AND — to keep
+  // one guest per room — either in the guest's own room or a room no one else is in
   const open = (x, y) => x >= 0 && y >= 0 && x < f.W && y < f.H &&
-    f.tiles[y][x] !== TILE.WALL && !(G.px === x && G.py === y) && !tileOccupant(x, y, n);
+    f.tiles[y][x] !== TILE.WALL && !(G.px === x && G.py === y) && !tileOccupant(x, y, n) &&
+    (f.owner[y][x] === curZone || !zoneHasGuest(f.owner[y][x], n));
   const cands = [];
   for (const [dx, dy] of DIRS4) { const nx = p.x + dx, ny = p.y + dy; if (open(nx, ny)) cands.push({ x: nx, y: ny }); }
   // the hidden door: cross the wall between its outside tile (a) and chamber tile (b)
@@ -303,9 +313,11 @@ function moveGuest(n) {
   if (!cands.length) return;
   const dst = pick(cands);
   G.gpos[n] = dst;
-  // inside the passage, the exit spot drops a guest out into a random room
+  // inside the passage, the exit spot drops a guest out into a random EMPTY room
   if (f.owner[dst.y][dst.x] === SEALED_ROOM && dst.x === P.exitTile.x && dst.y === P.exitTile.y) {
-    const dest = pick([...reachableRooms()].filter(r => r !== SEALED_ROOM));
+    const rooms = [...reachableRooms()].filter(r => r !== SEALED_ROOM);
+    const empty = rooms.filter(r => !zoneHasGuest(r, n));
+    const dest = pick(empty.length ? empty : rooms);
     const c = ROOM_META[dest].center;
     G.gpos[n] = freeTileIn(dest, n) || { x: c.x, y: c.y };
   }
@@ -406,26 +418,24 @@ function newGame(names, diffKey) {
   chosenDecoys.forEach((d, i) => { if (decoyRooms[i] != null) objects[decoyRooms[i]] = { kind: 'decoy', label: d, examined: false }; });
 
   // suspects' CURRENT tile positions (they roam the house tile by tile; this is
-  // separate from their alibi trueRoom). Each starts on a distinct floor tile,
-  // spread across reachable rooms — never the sealed passage, never your doorway.
+  // separate from their alibi trueRoom). Each starts in its OWN distinct room —
+  // at most one guest per room, so you only ever meet one at a time — never the
+  // sealed passage and never the room you start in.
   const gpos = {};
   {
     const f = FLOORS[0];
-    const rooms = shuffle([...reach].filter(r => r !== SEALED_ROOM));
+    const startZone = f.owner[START_TILE.y][START_TILE.x];
+    const rooms = shuffle([...reach].filter(r => r !== SEALED_ROOM && r !== startZone));
     const tilesIn = i => {
       const t = [];
       for (let y = 0; y < f.H; y++) for (let x = 0; x < f.W; x++)
         if (f.owner[y][x] === i && !(x === START_TILE.x && y === START_TILE.y)) t.push({ x, y });
       return t;
     };
-    const used = new Set();
     suspects.forEach((n, idx) => {
-      for (let k = 0; k < rooms.length && !gpos[n]; k++) {
-        const room = rooms[(idx + k) % rooms.length];
-        const cand = shuffle(tilesIn(room)).find(t => !used.has(t.y * f.W + t.x));
-        if (cand) { gpos[n] = cand; used.add(cand.y * f.W + cand.x); }
-      }
-      if (!gpos[n]) { const c = ROOM_META[rooms[idx % rooms.length]].center; gpos[n] = { x: c.x, y: c.y }; }
+      const room = rooms[idx % rooms.length];      // distinct rooms (suspects ≤ rooms)
+      const t = tilesIn(room);
+      gpos[n] = t.length ? pick(t) : (() => { const c = ROOM_META[room].center; return { x: c.x, y: c.y }; })();
     });
   }
 
