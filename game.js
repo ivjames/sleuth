@@ -798,8 +798,8 @@ function runCommand(raw) {
   const cmd = parts[0];
   const arg = line.slice(cmd.length).trim();
 
-  // Movement is the arrow keys; typed commands use full words. The ONLY letter
-  // shortcuts are E/X (examine) and Q (question).
+  // Movement is the arrow keys; typed commands use full words. The ONLY
+  // shortcuts are EX (examine) and Q (question).
   switch (cmd) {
     case 'north': return moveDir('N');
     case 'south': return moveDir('S');
@@ -814,7 +814,7 @@ function runCommand(raw) {
     }
     case 'look': return doLook();
     case 'search': case 'probe': case 'feel': return searchWalls();
-    case 'e': case 'x': case 'examine': case 'inspect': {
+    case 'ex': case 'examine': case 'inspect': {
       if (/wall|panel|paper|passage/.test(arg)) return searchWalls();
       if (!arg || /room|here|around/.test(arg)) { if (G.objects[G.player]) return examineObject(G.player); return doLook(); }
       if (/glass|magnif/.test(arg)) return takeGlass();
@@ -851,7 +851,7 @@ function showHelp() {
   log('<span class="cyan">— COMMANDS —</span>', 'clue');
   [
     'Move:            the arrow keys walk you (the yellow face) through the rooms',
-    'EXAMINE (E / X)  — inspect the clue here (bloodstains reveal the ROOM; the glass reveals more)',
+    'EXAMINE (EX)     — inspect the clue here (bloodstains reveal the ROOM; the glass reveals more)',
     'QUESTION (Q) &lt;name&gt; — ask a guest for their alibi (don\'t overdo it!)',
     'LOOK             — describe the current room again',
     'TAKE glass       — pick up the magnifying glass',

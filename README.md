@@ -76,7 +76,7 @@ Everything is typed (plus the arrow keys) — no buttons, like the original.
 
 - **Move**: the **arrow keys** walk you (the yellow face) through the rooms.
   Entering a new room spends a move.
-- **`EXAMINE`** (shortcut **`E`** or **`X`**): inspect the clue in the current room
+- **`EXAMINE`** (shortcut **`EX`**): inspect the clue in the current room
   — bloodstains reveal the room; the glass reveals more.
 - **`QUESTION <name>`** (shortcut **`Q`**): ask a guest for their alibi. **Don't
   over-ask** — the murderer notices.
