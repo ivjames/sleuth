@@ -126,22 +126,23 @@ The browser test needs Playwright + Chromium on `NODE_PATH`.
 
 ## Deploying on the lab980 droplet
 
-Served at **sleuth.lab980.com** on local port **8065** — standard
-one-dir-per-site / pm2 / nginx / certbot shape. Run this **on the droplet**
-(provisioning can't be done from a sandbox):
+Served at **sleuth.lab980.com** — standard one-dir-per-site / pm2 / nginx /
+certbot shape. Run this **on the droplet** (provisioning can't be done from a
+sandbox):
 
 ```
 provision-site sleuth ivjames/sleuth        # DO DNS + dir + clone + nginx + TLS
 cd /var/www/sleuth
-git checkout claude/sleuth-dos-game-clone-be9myt   # until this branch is the default
 npm ci --omit=dev
-PORT=8065 pm2 start server.js --name sleuth && pm2 save
 ln -sf /var/www/sleuth/bin/sleuth /usr/local/bin/sleuth
+sleuth start                                # pm2 start on the assigned port + pm2 save
 ```
 
-`provision-site` clones the repo's **default branch**; the game currently lives
-on `claude/sleuth-dos-game-clone-be9myt`, so check that branch out after cloning
-(or merge it to the default branch first, then skip the checkout). Thereafter
+**Don't pass `--port`.** `provision-site` picks the next free port in 8060–8099
+by scanning both live sockets and existing nginx vhosts, and writes it to
+`/var/www/sleuth/.env`; `bin/sleuth` reads the port from there, so the app,
+pm2, and the nginx proxy all agree without ever stomping another site.
+`provision-site` clones the repo's **default branch** (`main`). Thereafter
 `sleuth deploy` does git pull → install → pm2 restart.
 
 ## Credits

@@ -9,13 +9,19 @@ set -euo pipefail
 
 APP="sleuth"
 DIR="/var/www/sleuth"
-PORT="${PORT:-8065}"
+ENV_PORT="${PORT:-}"          # an explicit `PORT=… sleuth …` override, if any
 
 # resolve DIR to the repo this script lives in when not on the droplet
 if [[ ! -d "$DIR" ]]; then
   DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fi
 cd "$DIR"
+
+# The port is whatever provision-site assigned and wrote to .env (it picks the
+# next free port, checking live sockets AND existing nginx vhosts). Never hardcode
+# it — that's how you stomp another site. Order of precedence: explicit env > .env > 8065.
+[[ -f "$DIR/.env" ]] && { set -a; . "$DIR/.env"; set +a; }
+PORT="${ENV_PORT:-${PORT:-8065}}"
 
 cmd="${1:-help}"
 case "$cmd" in
