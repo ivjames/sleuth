@@ -51,11 +51,11 @@ solid, spaces are floor. You are the **yellow face**; the guests are anonymous
 **cyan faces** (as in the original) — you find out who's in a room by walking in
 and reading who's there.
 
-The estate holds **twelve named rooms** — Parlor, Sewing Room, Study, West Hall,
+The estate holds **eleven ordinary rooms** — Parlor, Study, West Hall,
 Grand Foyer, Dining Hall, Ballroom, Music Room, East Hall, Master Bedroom,
-Bathroom and Kitchen. You walk with the arrow keys; stepping into a new room is
-what costs a move. The murder can happen in any room you can reach, and the
-guests roam the house too. The solvability test checks that every essential clue
+Bathroom and Kitchen — plus the sealed twelfth space described below. You walk
+with the arrow keys; stepping into a new room is what costs a move. The murder
+can happen in any room you can reach, and the guests roam the house too. The solvability test checks that every essential clue
 is reachable through the room graph *and* that the tile floorplan itself is
 walkable from the front door.
 
@@ -85,9 +85,11 @@ Everything is typed (plus the arrow keys) — no buttons, like the original.
 - **`QUESTION <name>`** (shortcut **`Q`**): ask a guest for their alibi. **Don't
   over-ask** — the murderer notices.
 - **`TAKE glass`**: pick up the magnifying glass (needed before you can read clues closely).
-- **`SEARCH`** / **`PASSAGE`**: probe for and use the hidden passage.
 - **`ACCUSE`**: name the murderer, weapon, and room. One shot. Be right.
 - **`WAIT`**, **`LOOK`**, **`NOTEBOOK`**, **`HELP`**: as you'd expect.
+
+The hidden passage has **no command** — you find and use it by walking (see
+"The secret passage" above).
 
 **Pressure:** every action burns a move. When the killer's suspicion meter
 fills (from repeated questioning), they start **hunting you** — if they catch
@@ -124,16 +126,23 @@ The browser test needs Playwright + Chromium on `NODE_PATH`.
 
 ## Deploying on the lab980 droplet
 
-Standard one-dir-per-site / pm2 / nginx / certbot shape:
+Served at **sleuth.lab980.com** on local port **8065** — standard
+one-dir-per-site / pm2 / nginx / certbot shape. Run this **on the droplet**
+(provisioning can't be done from a sandbox):
 
 ```
-provision-site sleuth ivjames/sleuth        # DNS + dir + clone + nginx + TLS
-cd /var/www/sleuth && npm ci --omit=dev
+provision-site sleuth ivjames/sleuth        # DO DNS + dir + clone + nginx + TLS
+cd /var/www/sleuth
+git checkout claude/sleuth-dos-game-clone-be9myt   # until this branch is the default
+npm ci --omit=dev
 PORT=8065 pm2 start server.js --name sleuth && pm2 save
 ln -sf /var/www/sleuth/bin/sleuth /usr/local/bin/sleuth
 ```
 
-Thereafter `sleuth deploy` does git pull → install → pm2 restart.
+`provision-site` clones the repo's **default branch**; the game currently lives
+on `claude/sleuth-dos-game-clone-be9myt`, so check that branch out after cloning
+(or merge it to the default branch first, then skip the checkout). Thereafter
+`sleuth deploy` does git pull → install → pm2 restart.
 
 ## Credits
 
