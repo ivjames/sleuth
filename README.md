@@ -72,13 +72,18 @@ dark.
 
 ## How to play
 
-- **Move**: **arrow keys** walk you (the yellow face) through rooms and doorways
-  (`N`/`S`/`E`/`W` step one tile too). Entering a new room spends a move.
-- **`TAKE glass`**: pick up the magnifying glass (required before you can examine clues).
-- **`EXAMINE`**: inspect the clue in the current room (or click the object).
-- **`QUESTION <name>`**: ask a guest for their alibi (or click a guest). **Don't over-ask** — the murderer notices.
+Everything is typed (plus the arrow keys) — no buttons, like the original.
+
+- **Move**: the **arrow keys** walk you (the yellow face) through the rooms.
+  Entering a new room spends a move.
+- **`EXAMINE`** (shortcut **`E`** or **`X`**): inspect the clue in the current room
+  — bloodstains reveal the room; the glass reveals more.
+- **`QUESTION <name>`** (shortcut **`Q`**): ask a guest for their alibi. **Don't
+  over-ask** — the murderer notices.
+- **`TAKE glass`**: pick up the magnifying glass (needed before you can read clues closely).
+- **`SEARCH`** / **`PASSAGE`**: probe for and use the hidden passage.
 - **`ACCUSE`**: name the murderer, weapon, and room. One shot. Be right.
-- **`WAIT`**, **`LOOK`**, **`HELP`**: as you'd expect.
+- **`WAIT`**, **`LOOK`**, **`NOTEBOOK`**, **`HELP`**: as you'd expect.
 
 **Pressure:** every action burns a move. When the killer's suspicion meter
 fills (from repeated questioning), they start **hunting you** — if they catch

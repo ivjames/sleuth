@@ -798,22 +798,23 @@ function runCommand(raw) {
   const cmd = parts[0];
   const arg = line.slice(cmd.length).trim();
 
+  // Movement is the arrow keys; typed commands use full words. The ONLY letter
+  // shortcuts are E/X (examine) and Q (question).
   switch (cmd) {
-    case 'n': case 'north': return moveDir('N');
-    case 's': case 'south': return moveDir('S');
-    case 'e': case 'east':  return moveDir('E');
-    case 'w': case 'west':  return moveDir('W');
-    case 'u': case 'up': case 'upstairs':     return moveDir('U');
-    case 'd': case 'down': case 'downstairs': return moveDir('D');
-    case 'p': case 'passage': case 'secret':  return moveDir('P');
+    case 'north': return moveDir('N');
+    case 'south': return moveDir('S');
+    case 'east':  return moveDir('E');
+    case 'west':  return moveDir('W');
+    case 'up': case 'upstairs':     return moveDir('U');
+    case 'down': case 'downstairs': return moveDir('D');
+    case 'passage': case 'secret':  return moveDir('P');
     case 'go': case 'move': {
-      const d = { north:'N', south:'S', east:'E', west:'W', up:'U', down:'D', upstairs:'U', downstairs:'D',
-                  n:'N', s:'S', e:'E', w:'W', u:'U', passage:'P' }[arg.toLowerCase()];
-      return d ? moveDir(d) : log('Go where? Try: GO NORTH / SOUTH / EAST / WEST / UP / DOWN.', 'sys');
+      const d = { north:'N', south:'S', east:'E', west:'W', up:'U', down:'D', upstairs:'U', downstairs:'D', passage:'P' }[arg.toLowerCase()];
+      return d ? moveDir(d) : log('Go where? Try: GO NORTH / SOUTH / EAST / WEST.', 'sys');
     }
-    case 'l': case 'look': return doLook();
+    case 'look': return doLook();
     case 'search': case 'probe': case 'feel': return searchWalls();
-    case 'x': case 'examine': case 'inspect': {
+    case 'e': case 'x': case 'examine': case 'inspect': {
       if (/wall|panel|paper|passage/.test(arg)) return searchWalls();
       if (!arg || /room|here|around/.test(arg)) { if (G.objects[G.player]) return examineObject(G.player); return doLook(); }
       if (/glass|magnif/.test(arg)) return takeGlass();
@@ -826,11 +827,11 @@ function runCommand(raw) {
       if (!arg) return log('Question whom? e.g. QUESTION Dr. Crane', 'sys');
       return questionPerson(arg.replace(/^(to|the)\s+/, ''));
     }
-    case 'notebook': case 'notes': case 'nb': return dumpNotebook();
+    case 'notebook': case 'notes': return dumpNotebook();
     case 'accuse': case 'j\'accuse': return openAccuse();
-    case 'wait': case 'z': log('You wait, listening…', 'you'); return spendTurn();
-    case 'map': return log('The map is displayed at all times, top-left.', 'sys');
-    case 'help': case '?': case 'h': return showHelp();
+    case 'wait': log('You wait, listening…', 'you'); return spendTurn();
+    case 'map': return log('The map is displayed at all times, up top.', 'sys');
+    case 'help': return showHelp();
     default:
       log(`I don't understand "${cmd}". Type <span class="cyan">HELP</span> for commands.`, 'sys');
   }
@@ -849,16 +850,16 @@ function dumpNotebook() {
 function showHelp() {
   log('<span class="cyan">— COMMANDS —</span>', 'clue');
   [
-    'Move:      arrow keys walk you (the yellow face) through the rooms and doorways (or N/S/E/W)',
-    'LOOK       — describe the current room',
-    'TAKE glass — pick up the magnifying glass',
-    'EXAMINE    — inspect the clue in this room (bloodstains reveal the ROOM; the glass reveals more)',
-    'SEARCH     — probe the walls for a hidden panel (somewhere the wallpaper looks off)',
-    'PASSAGE    — slip through a secret passage you\'ve opened',
-    'QUESTION &lt;name&gt; — ask a guest for their alibi (don\'t overdo it!)',
-    'NOTEBOOK   — review the clues and alibis you\'ve gathered',
-    'ACCUSE     — name the murderer, weapon, and room (one shot — be right)',
-    'WAIT       — let a moment pass',
+    'Move:            the arrow keys walk you (the yellow face) through the rooms',
+    'EXAMINE (E / X)  — inspect the clue here (bloodstains reveal the ROOM; the glass reveals more)',
+    'QUESTION (Q) &lt;name&gt; — ask a guest for their alibi (don\'t overdo it!)',
+    'LOOK             — describe the current room again',
+    'TAKE glass       — pick up the magnifying glass',
+    'SEARCH           — probe the walls for a hidden panel (somewhere the wallpaper looks off)',
+    'PASSAGE          — slip through a secret passage you\'ve opened',
+    'NOTEBOOK         — review the clues and alibis you\'ve gathered',
+    'ACCUSE           — name the murderer, weapon, and room (one shot — be right)',
+    'WAIT             — let a moment pass',
   ].forEach(t => log(t, 'sys'));
   log('<span class="dim">Find the bloodstained room, the weapon, and spot the liar (murderer). Watch for a guest staring at the floor.</span>', 'sys');
 }
