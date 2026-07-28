@@ -465,21 +465,44 @@ function renderMap() {
   fitMap();
 }
 
-// Size the floorplan as large as it fits its container on BOTH axes, so the map
-// fills the screen on any device. Monospace scales linearly, so measure once at
-// a reference size and scale from there. Safe no-op when there's no layout yet.
+// Keep --game-h synced to the *visible* viewport height. On mobile the
+// visualViewport shrinks when the on-screen keyboard opens, so this is what
+// keeps the map + log + input + D-pad all above the keyboard.
+function syncViewport() {
+  if (typeof window === 'undefined') return;
+  const vv = window.visualViewport;
+  const h = Math.round((vv && vv.height) || window.innerHeight || 0);
+  if (h) document.documentElement.style.setProperty('--game-h', h + 'px');
+  fitMap();
+}
+
+// Size the floorplan as large as it fits — width by its own box, height by
+// whatever's left in the game screen after the log, prompt and D-pad. Monospace
+// scales linearly, so measure once at a reference size and scale. When the
+// keyboard shrinks the viewport the height budget drops and the map shrinks to
+// match, so nothing is pushed off-screen. Safe no-op with no layout yet.
 function fitMap() {
   const mapEl = $('#map'); if (!mapEl) return;
   const pre = mapEl.querySelector('.floormap'); if (!pre) return;
-  const availW = mapEl.clientWidth  - 12;   // minus #map padding + a hair of slack
-  const availH = mapEl.clientHeight - 12;
+  const gs = $('#game-screen'); if (!gs) return;
+
+  let used = 0;   // height taken by the non-map rows (+ the flex gaps between them)
+  ['#log', '#prompt-row', '#dpad'].forEach(sel => {
+    const el = $(sel);
+    if (el && getComputedStyle(el).display !== 'none') used += el.offsetHeight;
+  });
+  const gap = parseFloat(getComputedStyle(gs).rowGap) || 0;
+
+  const availW = mapEl.clientWidth - 12;                 // minus #map padding + slack
+  const availH = gs.clientHeight - used - gap * 3 - 12;  // leftover for the map
   if (availW < 8 || availH < 8) return;
+
   const REF = 24;
   pre.style.fontSize = REF + 'px';
   const w = pre.scrollWidth, h = pre.scrollHeight;
   if (!w || !h) return;
   let fs = REF * Math.min(availW / w, availH / h);
-  fs = Math.max(11, Math.min(fs, 58));
+  fs = Math.max(9, Math.min(fs, 58));
   pre.style.fontSize = fs.toFixed(1) + 'px';
 }
 
@@ -886,6 +909,7 @@ function startGame() {
   log(`You are the <span class="hl">yellow face</span>; walk with the <span class="cyan">arrow keys</span> and type commands (<span class="cyan">HELP</span> for the list). Find the bloodstained room and the weapon, and unmask the liar before your time runs out.`);
   describeRoom();
   renderAll();
+  syncViewport();
   $('#cmd-input').focus();
 
   // test-only hook (opt-in via ?sleuthtest in the URL) — never active in normal play
@@ -930,9 +954,15 @@ function initEvents() {
     });
   });
 
-  // keep the map filling the screen as the window resizes / the device rotates
-  window.addEventListener('resize', fitMap);
-  window.addEventListener('orientationchange', () => setTimeout(fitMap, 120));
+  // keep the layout sized to the visible viewport as the window resizes, the
+  // device rotates, or the on-screen keyboard opens/closes (visualViewport)
+  window.addEventListener('resize', syncViewport);
+  window.addEventListener('orientationchange', () => setTimeout(syncViewport, 120));
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', syncViewport);
+    window.visualViewport.addEventListener('scroll', syncViewport);
+  }
+  syncViewport();
 
   // accuse modal
   $('#acc-confirm').onclick = confirmAccuse;
