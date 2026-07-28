@@ -370,6 +370,7 @@ function log(text, cls = 'evt') {
 
 const escHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const BLOCK_RE = /[█▀▄▌▐▙▟▛▜▖▗▘▝▚▞]/;   // any wall glyph in the map
+const FACE = '☻︎';             // CP437 smiley (VS15 forces the flat text form, not a colour emoji)
 
 // Draw the hand-drawn floorplan exactly as authored (block glyphs and all), with
 // the player as a dot walking the open floor and the guests as lettered dots.
@@ -384,9 +385,9 @@ function renderMap() {
     const ri = G.positions[n], m = ROOM_META[ri];
     const off = (perRoom[ri] = (perRoom[ri] || 0) + 1) - 1;
     const gx = m.center.x + (off % 2), gy = m.center.y + ((off / 2) | 0);
-    overlay[gy + ',' + gx] = { ch: '☻', cls: 'g-guest' };   // anonymous guests, as the original (CP437 smiley)
+    overlay[gy + ',' + gx] = { ch: FACE, cls: 'g-guest' };   // anonymous guests: inverted smiley (black on yellow)
   });
-  overlay[G.py + ',' + G.px] = { ch: '@', cls: 'g-you' };
+  overlay[G.py + ',' + G.px] = { ch: FACE, cls: 'g-you' };   // you: yellow smiley on black
   // open-passage endpoints show a '=' where you can slip through
   const P = G.passage;
   if (P.found) [P.panelRoom, P.exitRoom].forEach(r => {
@@ -883,7 +884,7 @@ function dumpNotebook() {
 function showHelp() {
   log('<span class="cyan">— COMMANDS —</span>', 'clue');
   [
-    'Move:      arrow keys walk your dot (@) through the rooms and doorways (or N/S/E/W)',
+    'Move:      arrow keys walk you (the yellow face) through the rooms and doorways (or N/S/E/W)',
     'LOOK       — describe the current room',
     'TAKE glass — pick up the magnifying glass',
     'EXAMINE    — inspect the clue in this room (bloodstains reveal the ROOM; the glass reveals more)',
@@ -913,7 +914,7 @@ function startGame() {
 
   log(`<span class="clue">It is a dark and stormy night. A scream echoes through a sprawling <span class="hl">single-story estate</span>. ${G.victim} has been murdered — the body already spirited away by persons unknown, but the killer left their mark on the floor of one room.</span>`);
   log(`The guests — <span class="cyan">${G.suspects.join(', ')}</span> — are all still here. One of them is the murderer.`);
-  log(`Walk your dot (<span class="g-you">@</span>) through the house with the <span class="cyan">arrow keys</span>. Find the bloodstained room, find the weapon, and unmask the liar before your time runs out. Type <span class="cyan">HELP</span> to begin.`);
+  log(`On the map you are the <span class="hl">yellow face</span>; the guests are the <span class="hl">bright inverted faces</span>. Walk with the <span class="cyan">arrow keys</span>, find the bloodstained room and the weapon, and unmask the liar before your time runs out. Type <span class="cyan">HELP</span> to begin.`);
   renderAll();
   $('#cmd-input').focus();
 

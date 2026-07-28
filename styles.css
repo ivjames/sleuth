@@ -151,8 +151,8 @@ html, body {
   border: 1px solid var(--border);
 }
 .floormap .g-wall  { color: #b4b4b4; }               /* solid gray walls, like the original */
-.floormap .g-you   { color: #ffe000; font-weight: bold; text-shadow: 0 0 6px rgba(255,224,0,0.6); }
-.floormap .g-guest { color: var(--cyan); }
+.floormap .g-you   { color: #ffe000; text-shadow: 0 0 6px rgba(255,224,0,0.6); }        /* you: yellow face on black */
+.floormap .g-guest { color: #000; background: #ffe000; }                               /* guests: inverted (black face on yellow) */
 .floormap .g-stair { color: #8ae234; }
 .floormap .g-here  { color: #4a3a10; }               /* faint dots mark the room you're standing in */
 .floormap .g-pass  { color: #ff5fff; font-weight: bold; }   /* an opened secret passage */

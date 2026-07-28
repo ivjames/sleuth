@@ -46,7 +46,7 @@ The map is the **exact overhead floorplan of the one-story estate**, transcribed
 character-for-character from the original as a monospaced block-glyph grid — full
 blocks (`█`) for the outer walls, half blocks (`▀▄▌▐` and corners) for the interior
 walls, and thin lines (`─`) for the staircase steps at the two front entrances.
-Your character is a **dot (`@`)** that walks the open floor; any block glyph is
+Your character is a **yellow smiley face** that walks the open floor; any block glyph is
 solid, spaces are floor, and the guests show as anonymous `☻` faces (as in the
 original) — you find out who's in a room by walking in and reading who's there.
 
@@ -71,7 +71,7 @@ dark.
 
 ## How to play
 
-- **Move**: **arrow keys** walk your dot (`@`) through rooms and doorways
+- **Move**: **arrow keys** walk you (the yellow face) through rooms and doorways
   (`N`/`S`/`E`/`W` step one tile too). Entering a new room spends a move.
 - **`TAKE glass`**: pick up the magnifying glass (required before you can examine clues).
 - **`EXAMINE`**: inspect the clue in the current room (or click the object).
