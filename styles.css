@@ -128,8 +128,23 @@ html, body {
 .big-btn.danger:hover { background: var(--red); color: #000; }
 
 /* ============ GAME LAYOUT — map, a few lines of text, a prompt ============ */
-/* ---- Map (overhead floorplan) ---- */
-#map { display: flex; justify-content: center; overflow-x: auto; background: #000; border: 1px solid var(--border); padding: 4px; }
+/* In-game the screen goes full-viewport and the map takes all the room it can. */
+#screen:has(#game-screen:not(.hidden)) {
+  max-width: none;
+  min-height: calc(100vh - 20px);
+  display: flex;
+  flex-direction: column;
+}
+#game-screen:not(.hidden) {
+  display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0;
+}
+
+/* ---- Map (overhead floorplan) — grows to fill; JS sizes the font to fit ---- */
+#map {
+  display: flex; justify-content: center; align-items: center;
+  flex: 1 1 auto; min-height: 0; overflow: auto;
+  background: #000; border: 1px solid var(--border); padding: 4px;
+}
 .floor { min-width: 0; }
 .floormap {
   margin: 0;
@@ -178,6 +193,30 @@ html, body {
 #cmd-input:focus { outline: none; border-color: var(--border-hi); }
 #cmd-input::placeholder { color: #4a4a2a; }
 #status { font-size: 12px; color: var(--gray); white-space: nowrap; }
+
+/* ---- Touch D-pad — hidden on desktop, shown on touch devices (iPad/phones) ---- */
+#dpad {
+  display: none;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 8px;
+  width: min(240px, 62vw);
+  margin: 10px auto 2px;
+  flex: 0 0 auto;
+  touch-action: manipulation;
+}
+.dbtn {
+  background: #1a1400; border: 2px solid var(--border-hi); color: var(--amber);
+  font-family: inherit; font-size: 22px; line-height: 1; padding: 14px 0;
+  cursor: pointer; text-shadow: 0 0 6px rgba(255,176,0,0.4);
+  -webkit-user-select: none; user-select: none; touch-action: manipulation;
+}
+.dbtn:active { background: var(--amber); color: #000; }
+.dbtn.up    { grid-area: 1 / 2; }
+.dbtn.left  { grid-area: 2 / 1; }
+.dbtn.right { grid-area: 2 / 3; }
+.dbtn.down  { grid-area: 3 / 2; }
+@media (hover: none), (pointer: coarse) { #dpad { display: grid; } }
 
 /* ============ MODALS ============ */
 .modal {
