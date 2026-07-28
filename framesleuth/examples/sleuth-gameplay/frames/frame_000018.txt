@@ -1,7 +1,11 @@
 DARRLEON = MFOB72
 
-You have entered the hutler’s bedroom. The room is decorated in a simple, but
-tasteful manner, The furniture is rather worn,
-A pewter Jefferson cup sits on the night stand.
+SLEUTH
 
-)
+Select the option of your choice:
+(A) Basic Sleuth
+
+(B) Personalized Sleuth
+(C) Review Instructions
+
+Copyright (C) 1983 by Eric N. Miller and Norland Software

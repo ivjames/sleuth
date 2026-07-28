@@ -6,15 +6,22 @@ reimagines.
 
 - **Source:** [`sleuth-gameplay.mp4`](./sleuth-gameplay.mp4) — 640×360, ~4m38s,
   30 fps.
-- **Command:**
+- **Command** (tuned to catch fine movement detail — a high sampling rate and a
+  tight dedup threshold, so intermediate positions survive):
   ```bash
   python -m framesleuth examples/sleuth-gameplay/sleuth-gameplay.mp4 \
-      -o out --fps 2 --method phash
+      -o out --fps 10 --method phash --threshold 4
   ```
-- **Result:** 557 sampled frames (2 fps) deduplicated down to **25 distinct
+- **Result:** 2,785 sampled frames (10 fps) deduplicated down to **64 distinct
   shots**. Each kept frame has a `.txt` OCR sidecar in [`frames/`](./frames);
   full per-frame records (timestamp, phash, text) are in
   [`manifest.json`](./manifest.json).
+
+The tight threshold keeps genuine movement rather than duplicates: the title
+screen typing in letter-by-letter (frames #00–#17) and the player dot walking
+room to room across the floorplan (frames #21+) each register as their own
+shot. For a leaner set, raise `--threshold` (e.g. 6 → ~41 shots, 8 → ~24) or
+lower `--fps`.
 
 ![Contact sheet of the 25 kept frames](./contact_sheet.png)
 

@@ -1,0 +1,5 @@
+DARRLEON = MFOB72
+
+You are walking through the east hall
+
+Small crystal lamps light the walls.

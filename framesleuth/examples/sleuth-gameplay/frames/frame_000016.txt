@@ -1,10 +1,13 @@
-DARKRLEON = MFOB72
+SLEUTH Version 4.1
 
-Daryl draws you closer and whispers, "John and I spent the
-entire evening together in the parlor, Now, uh... I’m not one to
-gossip, but I don’t think you could go wrong by looking into William’s
+If you obtained this program
+from another user and find
+it entertaining, a $18
+contribution is suggested,
 
-story,
-.
+Eric N. Miller - Norland Software
+1433 North Fuller Avenue #6
+Los Angeles, CA 9
 
-There’s one person who won’t lose any sleep over Harriet’s death."
+You are encouraged to copy and
+share this program with others,

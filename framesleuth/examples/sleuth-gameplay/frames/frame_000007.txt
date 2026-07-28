@@ -1,11 +1,13 @@
-DARKRLEON = MFOB72
+SLEUTH Version 4.1
 
-SLEUTH
+If you obtained this program
+from another user and find
+it entertaining, a $10
+contribution is suggested,
 
-Select the option of your choice:
+Eric N. Miller - Norland Software
+1433 North Fuller Avenue #6
+Los Angeles, CA 9
 
-(A) Basic Sleuth
-(B) Personalized Sleuth
-(C) Review Instructions
-
-Copyright (C) 1983 by Eric N. Miller and Norland Software
+You are encouraged to copy and
+share this program with others,

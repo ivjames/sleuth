@@ -9,17 +9,17 @@
     "duration_seconds": 278.546576
   },
   "params": {
-    "fps": 2.0,
+    "fps": 10.0,
     "method": "phash",
-    "threshold": 6.0,
+    "threshold": 4.0,
     "scale_width": null,
     "start": null,
     "duration": null,
     "ocr": true,
     "ocr_lang": "eng"
   },
-  "raw_frame_count": 557,
-  "kept_frame_count": 25,
+  "raw_frame_count": 2785,
+  "kept_frame_count": 64,
   "frames": [
     {
       "index": 0,
@@ -27,224 +27,575 @@
       "source_frame": 0,
       "timestamp_seconds": 0.0,
       "timestamp": "00:00:00.000",
-      "phash": "ff9568cf804cc097",
+      "phash": "ff946ec98148c0f3",
       "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $18\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n1433 North Fuller Avenue #6\nLos Angeles, CA 90046\n\nshare this program with\n\nYou are encouraged to ory and\n0\n\nhers,"
     },
     {
       "index": 1,
       "filename": "frame_000001.png",
       "source_frame": 2,
-      "timestamp_seconds": 1.0,
-      "timestamp": "00:00:01.000",
-      "phash": "f79f68b98460c0b3",
-      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $10\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nYou are encouraged to copy and\nshare this program with others,"
+      "timestamp_seconds": 0.2,
+      "timestamp": "00:00:00.200",
+      "phash": "ff9568cf804cc097",
+      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $18\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n1433 North Fuller Avenue #6\nLos Angeles, CA 90046\n\nshare this program with\n\nYou are encouraged to ory and\n0\n\nhers,"
     },
     {
       "index": 2,
       "filename": "frame_000002.png",
-      "source_frame": 3,
-      "timestamp_seconds": 1.5,
-      "timestamp": "00:00:01.500",
-      "phash": "ff9748b98168c0b9",
-      "text": "tomy | fa\n\nSLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $10\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nYou are encouraged to copy and\nshare this program with others,"
+      "source_frame": 4,
+      "timestamp_seconds": 0.4,
+      "timestamp": "00:00:00.400",
+      "phash": "ff97688f804cc0f1",
+      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $18\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n1433 North Fuller Avenue #6\n\nLos Angeles, CA 9\n\nYou are encouraged to ory and\n0\n\nshare this program with others,"
     },
     {
       "index": 3,
       "filename": "frame_000003.png",
-      "source_frame": 4,
-      "timestamp_seconds": 2.0,
-      "timestamp": "00:00:02.000",
-      "phash": "ffb7c8ac8368c0b0",
-      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $18\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nshare this program with\n\nCLEL,\n\nYou are encouraged to ory and\n0\n\nhers,"
+      "source_frame": 7,
+      "timestamp_seconds": 0.7,
+      "timestamp": "00:00:00.700",
+      "phash": "ff9768cd8168c093",
+      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $18\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n1433 North Fuller Avenue #6\nLos Angeles, CA 90046\n\nYou are encouraged to copy and\nshare this program with others,"
     },
     {
       "index": 4,
       "filename": "frame_000004.png",
-      "source_frame": 5,
-      "timestamp_seconds": 2.5,
-      "timestamp": "00:00:02.500",
-      "phash": "d737c8ac8bc0c0f3",
-      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $18\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nshare this program with\n\nCLELIT\n\nYou are encouraged to ory and\n0\n\nhers,"
+      "source_frame": 8,
+      "timestamp_seconds": 0.8,
+      "timestamp": "00:00:00.800",
+      "phash": "f79f68cf80c0c0d3",
+      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $10\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nYou are encouraged to copy and\nshare this program with others,"
     },
     {
       "index": 5,
       "filename": "frame_000005.png",
-      "source_frame": 6,
-      "timestamp_seconds": 3.0,
-      "timestamp": "00:00:03.000",
-      "phash": "f736c8ec83e0c0b5",
-      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $18\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nshare this program with\n\nCLELITH\n\nYou are encouraged to ory and\n0\n\nhers,"
+      "source_frame": 9,
+      "timestamp_seconds": 0.9,
+      "timestamp": "00:00:00.900",
+      "phash": "f79e60cc81e8c0d7",
+      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $10\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nYou are encouraged to copy and\nshare this program with others,"
     },
     {
       "index": 6,
       "filename": "frame_000006.png",
-      "source_frame": 18,
-      "timestamp_seconds": 9.0,
-      "timestamp": "00:00:09.000",
-      "phash": "ff00ffff000000ff",
-      "text": "ZZOo6an \u00b0c NOHIWAIVa"
+      "source_frame": 10,
+      "timestamp_seconds": 1.0,
+      "timestamp": "00:00:01.000",
+      "phash": "f79e629c8368c0b9",
+      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $10\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nYou are encouraged to copy and\nshare this program with others,"
     },
     {
       "index": 7,
       "filename": "frame_000007.png",
-      "source_frame": 19,
-      "timestamp_seconds": 9.5,
-      "timestamp": "00:00:09.500",
-      "phash": "ff29675e80089667",
-      "text": "DARKRLEON = MFOB72\n\nSLEUTH\n\nSelect the option of your choice:\n\n(A) Basic Sleuth\n(B) Personalized Sleuth\n(C) Review Instructions\n\nCopyright (C) 1983 by Eric N. Miller and Norland Software"
+      "source_frame": 11,
+      "timestamp_seconds": 1.1,
+      "timestamp": "00:00:01.100",
+      "phash": "f79f62b98468c0b1",
+      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $10\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nYou are encouraged to copy and\nshare this program with others,"
     },
     {
       "index": 8,
       "filename": "frame_000008.png",
-      "source_frame": 28,
-      "timestamp_seconds": 14.0,
-      "timestamp": "00:00:14.000",
-      "phash": "ff003d7d80802d7f",
-      "text": "DARRLBON = NFO872\n\nIt is a dark and stormy night.\n\nA murder is heing committed ..."
+      "source_frame": 14,
+      "timestamp_seconds": 1.4,
+      "timestamp": "00:00:01.400",
+      "phash": "f79f48b98c60c0b3",
+      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $10\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nYou are encouraged to copy and\nshare this program with others,"
     },
     {
       "index": 9,
       "filename": "frame_000009.png",
-      "source_frame": 34,
-      "timestamp_seconds": 17.0,
-      "timestamp": "00:00:17.000",
-      "phash": "ff86779124c0d0d3",
-      "text": "DARKRLEON = MFOB72\n\n6\nHarriet Seton was brutally murdered only hours ago.\nremoved by persons unknown from the murder scene,\nfront door of the Seton estate. The door is open,\n\n>\n\nThe body was\nYou are now standing at the"
+      "source_frame": 15,
+      "timestamp_seconds": 1.5,
+      "timestamp": "00:00:01.500",
+      "phash": "ff9748b98468c0b9",
+      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $10\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nYou are encouraged to copy and\nshare this program with others,"
     },
     {
       "index": 10,
       "filename": "frame_000010.png",
-      "source_frame": 167,
-      "timestamp_seconds": 83.5,
-      "timestamp": "00:01:23.500",
-      "phash": "ff80778585c4d0d3",
-      "text": "DARRLEON = MFOB72\n\nThis is the entrance to the sewing room."
+      "source_frame": 18,
+      "timestamp_seconds": 1.8,
+      "timestamp": "00:00:01.800",
+      "phash": "ffb748b88348c0b3",
+      "text": "tay | fa\n\nSLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $10\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nYou are encouraged to copy and\nshare this program with others,"
     },
     {
       "index": 11,
       "filename": "frame_000011.png",
-      "source_frame": 175,
-      "timestamp_seconds": 87.5,
-      "timestamp": "00:01:27.500",
-      "phash": "ff96779125c090d2",
-      "text": "DARRLEON = MFOB72\n\nYou have entered the parlor. A large sofa sits in the middle of the room.\ncan see the front lawn through the window.\n\nAn antique silver teapot sits on a table next to the sofa,\n\nCarlotta Winston is lying on the sofa.\n\n)\n\nYou"
+      "source_frame": 21,
+      "timestamp_seconds": 2.1,
+      "timestamp": "00:00:02.100",
+      "phash": "ffb7c8ac8368c0b0",
+      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $18\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nshare this program with\n\nCLEL\n\nYou are encouraged to ory and\n0\n\nhers,"
     },
     {
       "index": 12,
       "filename": "frame_000012.png",
-      "source_frame": 207,
-      "timestamp_seconds": 103.5,
-      "timestamp": "00:01:43.500",
-      "phash": "ffa6d79124c0c0d3",
-      "text": "DARKRLEON = MFOGB72\n\nCarlotta shrugs noaphalaatly and\nentire evening together in the se\nfor you on this one, inspector.\n\nthat\u2019s the truth, frank y, whoey\n\n)\n\nsays, \u201cWilliam and I spent the\n\nwing room, You\u2019ye got your work cut out\nNone of us cared much for Harriet, and\ner did it deserves a medal,\u201d"
+      "source_frame": 25,
+      "timestamp_seconds": 2.5,
+      "timestamp": "00:00:02.500",
+      "phash": "ff37c8ac81c8c0f1",
+      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $18\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nshare this program with\n\nCLE)\n\nYou are encouraged to ory and\n0\n\nhers,"
     },
     {
       "index": 13,
       "filename": "frame_000013.png",
-      "source_frame": 239,
-      "timestamp_seconds": 119.5,
-      "timestamp": "00:01:59.500",
-      "phash": "ff96579125c091d2",
-      "text": "DARKRLEON = MFOB72\n\nYou have entered the parlor. A large sofa sits in the middle of the room.\ncan see the front lawn through the window.\n\nfin antique silver teapot sits on a table next to the sofa.\n\nCarlotta Winston is lying on the sofa.\n\n)\n\nYou"
+      "source_frame": 27,
+      "timestamp_seconds": 2.7,
+      "timestamp": "00:00:02.700",
+      "phash": "d737c8ac8bc0c0f3",
+      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $18\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nshare this program with\n\nCLELIT\n\nYou are encouraged to ory and\n0\n\nhers,"
     },
     {
       "index": 14,
       "filename": "frame_000014.png",
-      "source_frame": 242,
-      "timestamp_seconds": 121.0,
-      "timestamp": "00:02:01.000",
-      "phash": "ff80778185e4d0d3",
-      "text": "DARKRLEON = MFOB72\n\n|\n\nThis doorway leads into the parlor."
+      "source_frame": 29,
+      "timestamp_seconds": 2.9,
+      "timestamp": "00:00:02.900",
+      "phash": "f73fc0ec89e0c0b1",
+      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $18\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nshare this program with\n\nCLELITE\n\nYou are encouraged to ory and\n0\n\nhers,"
     },
     {
       "index": 15,
       "filename": "frame_000015.png",
-      "source_frame": 274,
-      "timestamp_seconds": 137.0,
-      "timestamp": "00:02:17.000",
-      "phash": "ff86779124c0d0d3",
-      "text": "DARRLEON = MFOB72\n\nYou are standing in the fanily vault\nback wall, A roll-top desk s\nAn electric drill lies on the floor.\n\n.\n\nA large safe is pushed against the\n\nands next to the safe,\n\nThere are many holes in the safe,"
+      "source_frame": 31,
+      "timestamp_seconds": 3.1,
+      "timestamp": "00:00:03.100",
+      "phash": "f73ec8ec83a0c0b5",
+      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $18\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nshare this program with\n\nCLELITH\n\nYou are encouraged to ory and\n0\n\nhers,"
     },
     {
       "index": 16,
       "filename": "frame_000016.png",
-      "source_frame": 322,
-      "timestamp_seconds": 161.0,
-      "timestamp": "00:02:41.000",
-      "phash": "ffa2d79125c4c0d1",
-      "text": "DARKRLEON = MFOB72\n\nDaryl draws you closer and whispers, \"John and I spent the\nentire evening together in the parlor, Now, uh... I\u2019m not one to\ngossip, but I don\u2019t think you could go wrong by looking into William\u2019s\n\nstory,\n.\n\nThere\u2019s one person who won\u2019t lose any sleep over Harriet\u2019s death.\""
+      "source_frame": 33,
+      "timestamp_seconds": 3.3,
+      "timestamp": "00:00:03.300",
+      "phash": "f736c8bc89e0c0b5",
+      "text": "SLEUTH Version 4.1\n\nIf you obtained this program\nfrom another user and find\nit entertaining, a $18\ncontribution is suggested,\n\nEric N. Miller - Norland Software\n1433 North Fuller Avenue #6\nLos Angeles, CA 9\n\nYou are encouraged to copy and\nshare this program with others,"
     },
     {
       "index": 17,
       "filename": "frame_000017.png",
-      "source_frame": 354,
-      "timestamp_seconds": 177.0,
-      "timestamp": "00:02:57.000",
-      "phash": "ff82778584c4d0d3",
-      "text": "DARKRLEON = MFOB72\n\nThis doorway leads into the master bedroom."
+      "source_frame": 89,
+      "timestamp_seconds": 8.9,
+      "timestamp": "00:00:08.900",
+      "phash": "ff00ffff000000ff",
+      "text": "ZZOo6an c NOHIWAIVa"
     },
     {
       "index": 18,
       "filename": "frame_000018.png",
-      "source_frame": 421,
-      "timestamp_seconds": 210.5,
-      "timestamp": "00:03:30.500",
-      "phash": "ff86739126c0d0d3",
-      "text": "DARRLEON = MFOB72\n\nYou have entered the hutler\u2019s bedroom. The room is decorated in a simple, but\ntasteful manner, The furniture is rather worn,\nA pewter Jefferson cup sits on the night stand.\n\n)"
+      "source_frame": 93,
+      "timestamp_seconds": 9.3,
+      "timestamp": "00:00:09.300",
+      "phash": "ff08676f8000667f",
+      "text": "DARRLEON = MFOB72\n\nSLEUTH\n\nSelect the option of your choice:\n(A) Basic Sleuth\n\n(B) Personalized Sleuth\n(C) Review Instructions\n\nCopyright (C) 1983 by Eric N. Miller and Norland Software"
     },
     {
       "index": 19,
       "filename": "frame_000019.png",
-      "source_frame": 435,
-      "timestamp_seconds": 217.5,
-      "timestamp": "00:03:37.500",
-      "phash": "ff82778185c4d0d3",
-      "text": "DARKRLEON = MFO872\n\nThis door leads into the butler\u2019s bedroom."
+      "source_frame": 94,
+      "timestamp_seconds": 9.4,
+      "timestamp": "00:00:09.400",
+      "phash": "ff2967de80009667",
+      "text": "DARRLEON = MFOB72\n\nSLEUTH\n\nSelect the option of your choice:\n\n(A) Basic Sleuth\n(B) Personalized Sleuth\n(C) Review Instructions\n\nCopyright (C) 1983 by Eric N. Miller and Norland Software"
     },
     {
       "index": 20,
       "filename": "frame_000020.png",
-      "source_frame": 444,
-      "timestamp_seconds": 222.0,
-      "timestamp": "00:03:42.000",
-      "phash": "ffa6d39124c0b0d3",
-      "text": "DARRLEON = MFOB72\n\nThis is the dining hall. A long teak table runs from one end of the roon to\nthe other. A wet bar sits near the entrance to the room.\n\nA silver serving platter is perched on the edge of the table.\n\nWilliam Seton peers out from underneath the table.\n\n)"
+      "source_frame": 141,
+      "timestamp_seconds": 14.1,
+      "timestamp": "00:00:14.100",
+      "phash": "ff003d7d80802d7f",
+      "text": "DARRLBON = NFO872\n\nIt is a dark and stormy night.\n\nA murder is heing committed ..."
     },
     {
       "index": 21,
       "filename": "frame_000021.png",
-      "source_frame": 468,
-      "timestamp_seconds": 234.0,
-      "timestamp": "00:03:54.000",
-      "phash": "ff82779584c0d0d3",
-      "text": "DARKRLEON = MFOB72\n\nWilliam turns abruptly to face you and says, \"It\u2019s no business of yours!\""
+      "source_frame": 168,
+      "timestamp_seconds": 16.8,
+      "timestamp": "00:00:16.800",
+      "phash": "ff00ffff000000ff",
+      "text": "ZZOGan - NOHIWAVGaG"
     },
     {
       "index": 22,
       "filename": "frame_000022.png",
-      "source_frame": 481,
-      "timestamp_seconds": 240.5,
-      "timestamp": "00:04:00.500",
-      "phash": "ff86779125c091d2",
-      "text": "DARKRLEON = MFOB72\n\nT\nt\nA.\nW\n)\n\nhis is the dining hall, A long teak table runs from one end of the room to\nhe other. A wet bar sits near the entrance to the room.\ni lver serving platter is perched on the edge of the table.\n\ni\nilliam Seton peers out from und"
+      "source_frame": 170,
+      "timestamp_seconds": 17.0,
+      "timestamp": "00:00:17.000",
+      "phash": "ff80779184e4d0d3",
+      "text": "ZZOGan - NOBIWAVGaG"
     },
     {
       "index": 23,
       "filename": "frame_000023.png",
-      "source_frame": 484,
-      "timestamp_seconds": 242.0,
-      "timestamp": "00:04:02.000",
-      "phash": "ff84778184e4d0d3",
-      "text": "DARRLEON = MFOB72\n\nYou are walking through the ea.. ......."
+      "source_frame": 171,
+      "timestamp_seconds": 17.1,
+      "timestamp": "00:00:17.100",
+      "phash": "ff86779124c0d0d3",
+      "text": "DARKRLEON = MFOB72\n\nzz\n[|\n6\nHarriet Seton was brutally murdered only hours ago.\n\nremoved by persons unknown from the murder scene,\nfront door of the Seton estate, The door is open,\n\nThe body was\nYou are now standing at the"
     },
     {
       "index": 24,
       "filename": "frame_000024.png",
-      "source_frame": 493,
-      "timestamp_seconds": 246.5,
-      "timestamp": "00:04:06.500",
-      "phash": "ff86739107c0d0d3",
-      "text": "DARKRLEON = MFOB72\n\nThese stairs lead up to the east hall. The steps are cut from marble and are\n\nsomewhat sli\nThe murderer\n\n.\n\n\"h\n\nery. a : ae\nas grown suspicious of your investigation?"
+      "source_frame": 299,
+      "timestamp_seconds": 29.9,
+      "timestamp": "00:00:29.900",
+      "phash": "ff80778584e4d0d3",
+      "text": "DARKRLEON = MFOGB72\n\nA\n\nThese stairs lead up to the west hal.. .... -"
+    },
+    {
+      "index": 25,
+      "filename": "frame_000025.png",
+      "source_frame": 423,
+      "timestamp_seconds": 42.3,
+      "timestamp": "00:00:42.300",
+      "phash": "ff86739184e0d0d3",
+      "text": "DARRLEON = MFOGB72\n\nYou are standin\nin the center o\n\nin the sewing room.\nthe room,\n\nMany overstuffed chairs sit in a circle"
+    },
+    {
+      "index": 26,
+      "filename": "frame_000026.png",
+      "source_frame": 605,
+      "timestamp_seconds": 60.5,
+      "timestamp": "00:01:00.500",
+      "phash": "ff827785a4c0d0d3",
+      "text": "DARKRLEON = MFOG872\n\nPerhaps I just don\u2019t understand what you\u2019re looking for, hut I don\u2019t see\nanything like that around here,\n\nexamine"
+    },
+    {
+      "index": 27,
+      "filename": "frame_000027.png",
+      "source_frame": 823,
+      "timestamp_seconds": 82.3,
+      "timestamp": "00:01:22.300",
+      "phash": "ff86739125c0d0d3",
+      "text": "ES e MFOB72\n\nYou are standin\nin the center o\n\nMargaret Donleayvy is napping in one of\n\n)\n\nin the sewing room.\n\nfel\n\n_ |\n\nMany overstuffed chairs sit in a circle\n\nthe room. A magnifying glass is lying on the floor,\n\ne chairs,"
+    },
+    {
+      "index": 28,
+      "filename": "frame_000028.png",
+      "source_frame": 837,
+      "timestamp_seconds": 83.7,
+      "timestamp": "00:01:23.700",
+      "phash": "ff80778585c4d0d3",
+      "text": "DARRLEON = MFOB72\n\nThis is the entrance to the sewing room."
+    },
+    {
+      "index": 29,
+      "filename": "frame_000029.png",
+      "source_frame": 840,
+      "timestamp_seconds": 84.0,
+      "timestamp": "00:01:24.000",
+      "phash": "ff82779184e0d0d3",
+      "text": "DARRLEON = MFOB72\n\nY\nf\n\n.\n\nare walking through the west hall.\n\nou\nloral d\n\nal design,\n\nThe walls are papered in a tasteful"
+    },
+    {
+      "index": 30,
+      "filename": "frame_000030.png",
+      "source_frame": 873,
+      "timestamp_seconds": 87.3,
+      "timestamp": "00:01:27.300",
+      "phash": "ff96779125c090d2",
+      "text": "DARRLEON = MFOB72\n\nYou have entered the parlor. A large sofa sits in the middle of the room.\ncan see the front lawn through the window.\n\nAn antique silver teapot sits on a table next to the sofa,\n\nCarlotta Winston is lying on the sofa.\n\n.\n\nYou"
+    },
+    {
+      "index": 31,
+      "filename": "frame_000031.png",
+      "source_frame": 1034,
+      "timestamp_seconds": 103.4,
+      "timestamp": "00:01:43.400",
+      "phash": "ff86778184c4d0d3",
+      "text": "DARRLEON = MFOB72\n\nCarlotta shrugs nonchalantly a... -..-,\n\nquestion"
+    },
+    {
+      "index": 32,
+      "filename": "frame_000032.png",
+      "source_frame": 1035,
+      "timestamp_seconds": 103.5,
+      "timestamp": "00:01:43.500",
+      "phash": "ff87d79124c0c0d3",
+      "text": "DARKRLEON = MFOGB72\n\nCarlotta shrugs noaphalaatly and\nentire evening together in the se\nfor you on this one, inspector.\n\nthat\u2019s the truth, frank y, whoey\n\ndquestion\n\nsays, \u201cWilliam and I spent the\n\nwing room, You\u2019ye got your work cut out\nNone of us cared much for Harriet, and\ner did it deserves a medal,\u201d"
+    },
+    {
+      "index": 33,
+      "filename": "frame_000033.png",
+      "source_frame": 1196,
+      "timestamp_seconds": 119.6,
+      "timestamp": "00:01:59.600",
+      "phash": "ff96779124c090d3",
+      "text": "DARKRLEON = MFOB72\n\nYou have entered the parlor. A large sofa sits in the middle of the room.\ncan see the front lawn through the window.\n\nfn antique silver teapot sits on a table next to the sofa.\n\nCarlotta Winston is lying on th\n\n)\n\nYou"
+    },
+    {
+      "index": 34,
+      "filename": "frame_000034.png",
+      "source_frame": 1211,
+      "timestamp_seconds": 121.1,
+      "timestamp": "00:02:01.100",
+      "phash": "ff80778185e4d0d3",
+      "text": "DARKRLEON = MFOB72\n\n|\n\nThis doorway leads into the parlor.\n\n)"
+    },
+    {
+      "index": 35,
+      "filename": "frame_000035.png",
+      "source_frame": 1236,
+      "timestamp_seconds": 123.6,
+      "timestamp": "00:02:03.600",
+      "phash": "ff86739184e0d0d3",
+      "text": "DARRLEON = MFOB72\n\nYou\nfl\n\nu are alking through the west hall.\noral design.\n\nThe walls are papered in a tasteful"
+    },
+    {
+      "index": 36,
+      "filename": "frame_000036.png",
+      "source_frame": 1298,
+      "timestamp_seconds": 129.8,
+      "timestamp": "00:02:09.800",
+      "phash": "ff807791a4c4d0d3",
+      "text": "DARKRLEON = MFOB72\n\nThis section of the hall is lined with French Impressionist paintings."
+    },
+    {
+      "index": 37,
+      "filename": "frame_000037.png",
+      "source_frame": 1343,
+      "timestamp_seconds": 134.3,
+      "timestamp": "00:02:14.300",
+      "phash": "ff86779184e0c0d3",
+      "text": "DARRLEON = MFOB72\n\nYou uae talking through the west hall,\nfloral design,\n\n.\n\nThe walls are papered in a tasteful"
+    },
+    {
+      "index": 38,
+      "filename": "frame_000038.png",
+      "source_frame": 1480,
+      "timestamp_seconds": 148.0,
+      "timestamp": "00:02:28.000",
+      "phash": "ff82778584c4d0d3",
+      "text": "DARKRLEON = MFO872\n\nThis doorway leads into the master bedroom."
+    },
+    {
+      "index": 39,
+      "filename": "frame_000039.png",
+      "source_frame": 1503,
+      "timestamp_seconds": 150.3,
+      "timestamp": "00:02:30.300",
+      "phash": "ff86f39524c090d3",
+      "text": "DARKRLEON = MFOG872\n\nYou are now in the master hedroom. A Scandinavian bed dominates the room.\nteak dresser spans the west wall.\n\nA Jjewel-encrusted mirror lies at the foot of the hed.\n\nDaryl Winston is searching hehind the dresser\n\n)\n\nA"
+    },
+    {
+      "index": 40,
+      "filename": "frame_000040.png",
+      "source_frame": 1607,
+      "timestamp_seconds": 160.7,
+      "timestamp": "00:02:40.700",
+      "phash": "ff82779124c4d0d3",
+      "text": "DARKRLEON = MFOG872\n\nDaryl draws you closer and whispers, \"John and I spent the\n\nentire evening together in the parlor,\ngossip, but I don\u2019t think you could go w\n\nquestion\n\nOW,\n\n. \u00bb \u00ab I\u2019w not one to"
+    },
+    {
+      "index": 41,
+      "filename": "frame_000041.png",
+      "source_frame": 1608,
+      "timestamp_seconds": 160.8,
+      "timestamp": "00:02:40.800",
+      "phash": "ffa2d79125c4c0d1",
+      "text": "DARRLEON = MFOB72\n\nDaryl draws you closer and whispers, \"John and I spent the\nentire evening together in the parlor, Now, uh... I\u2019m not one to\ngossip, but I don\u2019t think you could go wrong by looking into William\u2019s\n\nstory,\n>\n\nThere\u2019s one person who won\u2019t lose any sleep over Harriet\u2019s death.\""
+    },
+    {
+      "index": 42,
+      "filename": "frame_000042.png",
+      "source_frame": 1768,
+      "timestamp_seconds": 176.8,
+      "timestamp": "00:02:56.800",
+      "phash": "ff82779184e0d0d3",
+      "text": "DARRLEON = MFOB72\n\nYou are now in the master bedroom.\nteak dresser spa\n\nfA Scandinavian bed dominates the room.\n\na"
+    },
+    {
+      "index": 43,
+      "filename": "frame_000043.png",
+      "source_frame": 1769,
+      "timestamp_seconds": 176.9,
+      "timestamp": "00:02:56.900",
+      "phash": "ff86f39524c090d3",
+      "text": "DARKRLEON = MFOB72\n\nYou are now in the master bedroom. A Scandinavian bed dominates the room.\nteak dresser spans the west wall,\n\nA Jewel-encrusted mirror lies at the foot of the hed.\n\nDaryl Winston is searching hehind the dresser,\n\n)\n\na"
+    },
+    {
+      "index": 44,
+      "filename": "frame_000044.png",
+      "source_frame": 1771,
+      "timestamp_seconds": 177.1,
+      "timestamp": "00:02:57.100",
+      "phash": "ff82778185c4d0d3",
+      "text": "DARKRLEON = MFOB72\n\nThis doorway leads into the master bedroom."
+    },
+    {
+      "index": 45,
+      "filename": "frame_000045.png",
+      "source_frame": 1833,
+      "timestamp_seconds": 183.3,
+      "timestamp": "00:03:03.300",
+      "phash": "ff847791a4c0d0d3",
+      "text": "DARKRLEON = MFOB72\n\nYou have entered the ballroom.\n\nThe room is bare exce,. ... .."
+    },
+    {
+      "index": 46,
+      "filename": "frame_000046.png",
+      "source_frame": 1925,
+      "timestamp_seconds": 192.5,
+      "timestamp": "00:03:12.500",
+      "phash": "ff80778584e4d0d3",
+      "text": "DARKRLEON = MFOG872\n\nThis is the entrance to the ballroom."
+    },
+    {
+      "index": 47,
+      "filename": "frame_000047.png",
+      "source_frame": 1964,
+      "timestamp_seconds": 196.4,
+      "timestamp": "00:03:16.400",
+      "phash": "ff86779184c0d0d3",
+      "text": "DARKRLEON = MFOB72\n\nYou are walking through the east hall.\n\nSmall crystal lamps light the walls."
+    },
+    {
+      "index": 48,
+      "filename": "frame_000048.png",
+      "source_frame": 1987,
+      "timestamp_seconds": 198.7,
+      "timestamp": "00:03:18.700",
+      "phash": "ff80778585e0d0d3",
+      "text": "DARKRLEON = MFO872\n\nThis door leads into the bathroom."
+    },
+    {
+      "index": 49,
+      "filename": "frame_000049.png",
+      "source_frame": 2004,
+      "timestamp_seconds": 200.4,
+      "timestamp": "00:03:20.400",
+      "phash": "ff86779124c0d0d3",
+      "text": "DARKRLEON = MFOB72\n\nYou\nAl\n\nhave entered the bathroom. A hot tub occupies one corner of the room,\n\narge mirror covers the east wall.\n\nA soap tray sits next to the Jacuzzi."
+    },
+    {
+      "index": 50,
+      "filename": "frame_000050.png",
+      "source_frame": 2063,
+      "timestamp_seconds": 206.3,
+      "timestamp": "00:03:26.300",
+      "phash": "ff80778585e0d0d3",
+      "text": "DARRLEON = MFOB72\n\nThis door leads into the bathroom."
+    },
+    {
+      "index": 51,
+      "filename": "frame_000051.png",
+      "source_frame": 2073,
+      "timestamp_seconds": 207.3,
+      "timestamp": "00:03:27.300",
+      "phash": "ff86779184c0d0d3",
+      "text": "DARRLEON = MFOB72\n\nYou are walking through the east hall\n\nSmall crystal lamps light the walls."
+    },
+    {
+      "index": 52,
+      "filename": "frame_000052.png",
+      "source_frame": 2200,
+      "timestamp_seconds": 220.0,
+      "timestamp": "00:03:40.000",
+      "phash": "ff82778584e4c0d3",
+      "text": "DARRLEON = MFOB72\n\nThis is the entrance to the dining hall."
+    },
+    {
+      "index": 53,
+      "filename": "frame_000053.png",
+      "source_frame": 2218,
+      "timestamp_seconds": 221.8,
+      "timestamp": "00:03:41.800",
+      "phash": "ffa6d39124c0b0d3",
+      "text": "DARRLEON = MFOB72\n\nThis is the dining hall. A long teak table runs from one end of the roon to\nthe other. A wet bar sits near the entrance to the room,\n\nA silver serving platter is perched on the edge of the table.\n\nWilliam Seton peers out from underneath the table.\n\n."
+    },
+    {
+      "index": 54,
+      "filename": "frame_000054.png",
+      "source_frame": 2341,
+      "timestamp_seconds": 234.1,
+      "timestamp": "00:03:54.100",
+      "phash": "ff82779584c0d0d3",
+      "text": "DARKRLEON = MFOB72\n\nWilliam turns abruptly to face you and says, \"It\u2019s no business of yours!\"\n\ndquestion"
+    },
+    {
+      "index": 55,
+      "filename": "frame_000055.png",
+      "source_frame": 2407,
+      "timestamp_seconds": 240.7,
+      "timestamp": "00:04:00.700",
+      "phash": "ff86779125c091d2",
+      "text": "DARKRLEON = MFOB72\n\nT\nt\nA.\nW\n)\n\nhis is the dining hall, A long teak table runs from one end of the room to\nhe other. A wet bar sits near the entrance to the room.\ni lver serving platter is perched on the edge of the table.\n\ni\nilliam Seton peers out from und"
+    },
+    {
+      "index": 56,
+      "filename": "frame_000056.png",
+      "source_frame": 2408,
+      "timestamp_seconds": 240.8,
+      "timestamp": "00:04:00.800",
+      "phash": "ffa6d39125c0b0d2",
+      "text": "DARKRLEON = MFOB72\n\nT\nt\nA.\nW\n)\n\nhis is the dining hall, A long teak table runs from one end of the room to\nhe other. A wet bar sits near the entrance to the room.\ni lver serving platter is perched on the edge of the table.\n\ni\nilliam Seton peers out from underneath the table."
+    },
+    {
+      "index": 57,
+      "filename": "frame_000057.png",
+      "source_frame": 2420,
+      "timestamp_seconds": 242.0,
+      "timestamp": "00:04:02.000",
+      "phash": "ff8677c1a4c0c0d3",
+      "text": "DARRLEON = MFOGB72\n\nThis is the entrance to the dining hall.\nThe murderer has grown suspicious of your investigation!"
+    },
+    {
+      "index": 58,
+      "filename": "frame_000058.png",
+      "source_frame": 2422,
+      "timestamp_seconds": 242.2,
+      "timestamp": "00:04:02.200",
+      "phash": "ff84778184e4d0d3",
+      "text": "DARRLEON = MFOB72\n\nYou are walking through the ea.. ......."
+    },
+    {
+      "index": 59,
+      "filename": "frame_000059.png",
+      "source_frame": 2423,
+      "timestamp_seconds": 242.3,
+      "timestamp": "00:04:02.300",
+      "phash": "ff86779124c0d0d3",
+      "text": "DARKRLEON = MFOB72\n\nYou are walking through the east hall. Small crystal lamps light the walls.\nThe murderer has grown suspicious of your inyestigation!"
+    },
+    {
+      "index": 60,
+      "filename": "frame_000060.png",
+      "source_frame": 2482,
+      "timestamp_seconds": 248.2,
+      "timestamp": "00:04:08.200",
+      "phash": "ff8473c1a5c0d0d3",
+      "text": "DARKRLEON = MFOB72\n\nThis is the entrance to the kitchen,\nThe murderer has grown suspicious of your investigation!"
+    },
+    {
+      "index": 61,
+      "filename": "frame_000061.png",
+      "source_frame": 2494,
+      "timestamp_seconds": 249.4,
+      "timestamp": "00:04:09.400",
+      "phash": "ff80778584e4d0d3",
+      "text": "DYAYRIKLSE{O) Nm M F918) 742)\n\nThis is the entrance ta the kitchen,"
+    },
+    {
+      "index": 62,
+      "filename": "frame_000062.png",
+      "source_frame": 2495,
+      "timestamp_seconds": 249.5,
+      "timestamp": "00:04:09.500",
+      "phash": "ff86739125c0d0d3",
+      "text": "DARKRLEON = MFOG872\n\nThis is the kitchen. The room is equipped to handle large cooking tasks, This\nfamily seems to place great importance on fine cuisine.\nA bright brass pot hangs from the ceiling,\n\n)"
+    },
+    {
+      "index": 63,
+      "filename": "frame_000063.png",
+      "source_frame": 2784,
+      "timestamp_seconds": 278.4,
+      "timestamp": "00:04:38.400",
+      "phash": "df8653d181f191d2",
+      "text": ""
     }
   ]
 }

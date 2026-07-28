@@ -55,8 +55,9 @@ frame its `filename`, originating `source_frame`, `timestamp`, `phash`, and
 
 A worked example on real footage lives in
 [`examples/sleuth-gameplay/`](examples/sleuth-gameplay/): gameplay of the
-original SLEUTH 4.1 DOS game, where 557 sampled frames collapse to 25 distinct
-shots with OCR text per frame. See its
+original SLEUTH 4.1 DOS game, where 2,785 sampled frames (10 fps, tight
+threshold) collapse to 64 distinct shots — down to per-step movement — with OCR
+text per frame. See its
 [README](examples/sleuth-gameplay/README.md) and contact sheet.
 
 ## Options

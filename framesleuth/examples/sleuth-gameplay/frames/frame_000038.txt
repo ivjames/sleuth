@@ -1,0 +1,3 @@
+DARKRLEON = MFO872
+
+This doorway leads into the master bedroom.

@@ -1,0 +1,7 @@
+DARKRLEON = MFOG872
+
+This is the kitchen. The room is equipped to handle large cooking tasks, This
+family seems to place great importance on fine cuisine.
+A bright brass pot hangs from the ceiling,
+
+)

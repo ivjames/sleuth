@@ -1,0 +1,12 @@
+DARRLEON = MFOB72
+
+You have entered the parlor. A large sofa sits in the middle of the room.
+can see the front lawn through the window.
+
+An antique silver teapot sits on a table next to the sofa,
+
+Carlotta Winston is lying on the sofa.
+
+.
+
+You

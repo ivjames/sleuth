@@ -1,0 +1,8 @@
+DARRLEON = MFOB72
+
+You are now in the master bedroom.
+teak dresser spa
+
+fA Scandinavian bed dominates the room.
+
+a

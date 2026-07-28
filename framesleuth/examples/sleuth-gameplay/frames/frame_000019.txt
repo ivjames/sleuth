@@ -1,3 +1,11 @@
-DARKRLEON = MFO872
+DARRLEON = MFOB72
 
-This door leads into the butler’s bedroom.
+SLEUTH
+
+Select the option of your choice:
+
+(A) Basic Sleuth
+(B) Personalized Sleuth
+(C) Review Instructions
+
+Copyright (C) 1983 by Eric N. Miller and Norland Software

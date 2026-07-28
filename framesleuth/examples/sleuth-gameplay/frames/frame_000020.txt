@@ -1,10 +1,5 @@
-DARRLEON = MFOB72
+DARRLBON = NFO872
 
-This is the dining hall. A long teak table runs from one end of the roon to
-the other. A wet bar sits near the entrance to the room.
+It is a dark and stormy night.
 
-A silver serving platter is perched on the edge of the table.
-
-William Seton peers out from underneath the table.
-
-)
+A murder is heing committed ...

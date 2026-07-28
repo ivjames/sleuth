@@ -1,0 +1,7 @@
+DARKRLEON = MFOB72
+
+|
+
+This doorway leads into the parlor.
+
+)
