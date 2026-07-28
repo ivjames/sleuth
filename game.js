@@ -20,13 +20,56 @@
    Static data
    -------------------------------------------------------------------------- */
 
-// Room-name pools. As in the original, each game is played in one of two houses,
-// chosen at random: a sprawling SINGLE-story estate, or a TWO-story mansion whose
-// floors sit side by side with a break between them, joined by staircases. We
-// keep the simple grid navigation either way — a one-story game is one 4×4 grid;
-// a two-story game is two 4×2 grids (ground + upper) linked by stairs.
-const GROUND_ROOMS = ['Foyer','Living Room','Dining Room','Kitchen','Library','Study','Conservatory','Billiard Room'];
-const UPPER_ROOMS  = ['Master Bedroom','Guest Room','Nursery','Bathroom','Gallery','Trophy Room','Music Room','Balcony'];
+// The house is the exact hand-drawn one-story floorplan below — a monospaced
+// block-glyph map (█ full outer walls, ▀▄▌▐ + corners for interior half-walls,
+// ─ staircase steps, spaces are floor). You walk it as a dot: any block glyph is
+// solid, spaces are open floor. Rooms are named zones laid over that floor.
+const MAP = [
+  "████████████████████████████████████████",
+  "█      ▐    ▌               ▌   ▌      █",
+  "█      ▐    ▌               ▌          █",
+  "█           ▙▄▄▄▄▄▄  ▄▄▄▄▄▄▄▌   ▌      █",
+  "█      ▐                        ▙▄▄▄▄▄▄█",
+  "█      ▐                        ▌      █",
+  "█▀▀▀▀▀▀▜    ▛▀▀▀▀▀▀▌ ▛▀▀▀▀▀▜    ▌      █",
+  "█      ▐           ▌ ▌     ▐           █",
+  "█▄▄▄▄▄▄▟    ▙▄▄▄▄▄▄▌ ▌     ▐    ▌      █",
+  "█      ▐             ▌          ▙▄▄▄▄▄▄█",
+  "█           ▛▀▀▀▀▀▀▀▀▌     ▐    ▌      █",
+  "█      ▐             ▌     ▐           █",
+  "█      ▐────▌        ▌     ▐────▌      █",
+  "█      ▐────▌        ▌     ▐────▌      █",
+  "█████████  ██████████████████  █████████",
+];
+const MAPW = 40, MAPH = MAP.length;
+
+// Named rooms. Each is a zone centred on a floor tile; every reachable floor tile
+// joins the nearest centre it can actually walk to. The Sewing Room sits behind
+// sealed walls with no doorway — only the SECRET PASSAGE reaches it.
+const ZONE_DEFS = [
+  ['Parlor', 3, 3], ['Sewing Room', 3, 7], ['Study', 3, 11],
+  ['West Hall', 9, 5], ['Grand Foyer', 20, 1], ['Dining Hall', 16, 7],
+  ['Ballroom', 24, 10], ['Music Room', 16, 12], ['East Hall', 29, 6],
+  ['Master Bedroom', 35, 2], ['Bathroom', 35, 6], ['Kitchen', 35, 11],
+];
+const START_TILE = { x: 9, y: 13 };   // you begin at the front door (left stair)
+const SEALED_ROOM = 1;                 // Sewing Room — reached only by the passage
+
+// Room flavour, drawn from the original's own descriptions where we have them.
+const ROOM_FLAVOR = {
+  'Parlor':         'A large sofa sits in the middle of the room; through the window you can see the front lawn. An antique silver teapot rests on a side table.',
+  'Sewing Room':    'Many overstuffed chairs sit in a circle. It feels forgotten — no ordinary door leads here.',
+  'Study':          'Leather-bound books line the shelves and a heavy oak desk faces the door.',
+  'West Hall':      'You are walking through the west hall; the walls are papered in a tasteful floral design.',
+  'Grand Foyer':    'A wide entrance hall. Portraits of stern ancestors watch you from the walls.',
+  'Dining Hall':    'A long teak table runs from one end of the room to the other, a wet bar near the entrance. A silver serving platter is perched on its edge.',
+  'Ballroom':       'The room is bare except for a waxed parquet floor that stretches wide and empty.',
+  'Music Room':     'A grand piano sits in the corner, its lid raised over silent keys.',
+  'East Hall':      'You are walking through the east hall; small crystal lamps light the walls.',
+  'Master Bedroom': 'A Scandinavian bed dominates the room. A teak dresser spans the west wall, and a jewel-encrusted mirror lies at the foot of the bed.',
+  'Bathroom':       'A hot tub occupies one corner and a large mirror covers the east wall. A soap tray sits beside the jacuzzi.',
+  'Kitchen':        'The room is equipped for large cooking tasks — this family prizes fine cuisine. A bright brass pot hangs from the ceiling.',
+};
 
 // The current game's mansion, (re)built by buildMansion() at the start of each
 // game. Rooms have a stable global index; ROOMS[i] is the name, ADJ[i] maps a
@@ -40,91 +83,73 @@ let STORIES = 1;
 // Tile floorplan: each room is a walled rectangle, neighbours joined by a
 // doorway gap in the shared wall — an overhead line-drawn map you walk with a
 // dot, like the original. Rooms share walls (1 tile thick).
-const TILE = { WALL: 0, FLOOR: 1, DOOR: 2, STAIR: 3, PASSAGE: 4 };
-const RW = 7, RH = 4;              // room interior size, in tiles
-const PX = RW + 1, PY = RH + 1;    // grid pitch (interior + one shared wall)
+const TILE = { WALL: 0, FLOOR: 1, STAIR: 3, PASSAGE: 4 };
+const DIRS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+const isWalkGlyph = ch => ch === ' ' || ch === '─';
 
-function buildMansion(stories) {
-  ROOMS = []; ADJ = []; FLOORS = []; ROOM_META = []; STORIES = stories;
+// Parse the block-glyph MAP into a walkable floorplan and lay the named rooms over
+// it. tiles[y][x] is WALL / FLOOR / STAIR; owner[y][x] is the room that owns that
+// floor tile (a multi-source flood from each room centre, so every tile joins the
+// nearest room it can actually reach — the sealed Sewing Room stays its own island).
+function buildHouse() {
+  ROOMS = []; ADJ = []; FLOORS = []; ROOM_META = []; STORIES = 1;
 
-  const floorDefs = stories === 2
-    ? [ { name: 'Ground Floor', w: 4, h: 2, names: GROUND_ROOMS },
-        { name: 'Upper Floor',  w: 4, h: 2, names: UPPER_ROOMS } ]
-    : [ { name: '',             w: 4, h: 4, names: [...GROUND_ROOMS, ...UPPER_ROOMS] } ];
+  const glyph = MAP.map(r => Array.from(r.padEnd(MAPW, ' ')));
+  const walk = (x, y) => x >= 0 && y >= 0 && x < MAPW && y < MAPH && isWalkGlyph(glyph[y][x]);
+  const tiles = glyph.map(row => row.map(ch => ch === ' ' ? TILE.FLOOR : ch === '─' ? TILE.STAIR : TILE.WALL));
+  const owner = Array.from({ length: MAPH }, () => new Array(MAPW).fill(-1));
+  const dist  = Array.from({ length: MAPH }, () => new Array(MAPW).fill(Infinity));
 
-  // lay out each floor row-major, assigning stable global indices
-  floorDefs.forEach((f, fi) => {
-    const cells = [];
-    for (let r = 0; r < f.h; r++) for (let c = 0; c < f.w; c++) {
-      const gi = ROOMS.length;
-      ROOMS.push(f.names[r * f.w + c]);
-      ADJ.push({});
-      ROOM_META.push({ floor: fi, r, c, stair: false });
-      cells.push(gi);
+  ZONE_DEFS.forEach(([name]) => { ROOMS.push(name); ADJ.push({}); ROOM_META.push({ floor: 0, stair: false }); });
+
+  // multi-source BFS: seed each room's centre, spread over floor, nearest centre wins
+  const q = [];
+  ZONE_DEFS.forEach(([n, cx, cy], i) => { if (walk(cx, cy)) { owner[cy][cx] = i; dist[cy][cx] = 0; q.push([cx, cy]); } });
+  for (let h = 0; h < q.length; h++) {
+    const [x, y] = q[h];
+    for (const [dx, dy] of DIRS4) {
+      const nx = x + dx, ny = y + dy;
+      if (walk(nx, ny) && dist[ny][nx] > dist[y][x] + 1) { dist[ny][nx] = dist[y][x] + 1; owner[ny][nx] = owner[y][x]; q.push([nx, ny]); }
     }
-    FLOORS.push({ name: f.name, w: f.w, h: f.h, cells });
-  });
-
-  // grid adjacency within each floor
-  FLOORS.forEach(f => {
-    const at = (r, c) => f.cells[r * f.w + c];
-    for (let r = 0; r < f.h; r++) for (let c = 0; c < f.w; c++) {
-      const gi = at(r, c);
-      if (r > 0)        ADJ[gi].N = at(r - 1, c);
-      if (r < f.h - 1)  ADJ[gi].S = at(r + 1, c);
-      if (c > 0)        ADJ[gi].W = at(r, c - 1);
-      if (c < f.w - 1)  ADJ[gi].E = at(r, c + 1);
-    }
-  });
-
-  // staircases join the two floors at opposite corners ("from one side to the other")
-  if (stories === 2) {
-    const g = FLOORS[0], u = FLOORS[1];
-    const links = [
-      [g.cells[0 * g.w + (g.w - 1)], u.cells[0 * u.w + 0]],                    // ground top-right  <-> upper top-left
-      [g.cells[(g.h - 1) * g.w + 0], u.cells[(u.h - 1) * u.w + (u.w - 1)]],     // ground bottom-left <-> upper bottom-right
-    ];
-    links.forEach(([gi, ui]) => {
-      ADJ[gi].U = ui; ADJ[ui].D = gi;               // U = up to the upper floor, D = down to the ground floor
-      ROOM_META[gi].stair = ROOM_META[ui].stair = true;
-    });
   }
 
-  buildTiles();
+  // per-room bounding box + representative interior tile (its centre)
+  const bb = ZONE_DEFS.map(() => ({ x0: MAPW, y0: MAPH, x1: -1, y1: -1 }));
+  for (let y = 0; y < MAPH; y++) for (let x = 0; x < MAPW; x++) {
+    const o = owner[y][x];
+    if (o >= 0) { const b = bb[o]; if (x < b.x0) b.x0 = x; if (y < b.y0) b.y0 = y; if (x > b.x1) b.x1 = x; if (y > b.y1) b.y1 = y; }
+  }
+  ZONE_DEFS.forEach(([n, cx, cy], i) => {
+    const b = bb[i];
+    ROOM_META[i].rect = { x: b.x1 < 0 ? cx : b.x0, y: b.y1 < 0 ? cy : b.y0, w: Math.max(1, b.x1 - b.x0 + 1), h: Math.max(1, b.y1 - b.y0 + 1), floor: 0 };
+    ROOM_META[i].center = { x: cx, y: cy };
+  });
+
+  // room graph: rooms whose floor tiles touch are neighbours; direction from centres
+  const link = (a, b) => {
+    if (a === b || Object.values(ADJ[a]).includes(b)) return;
+    const A = ROOM_META[a].center, B = ROOM_META[b].center;
+    const dx = B.x - A.x, dy = B.y - A.y, horiz = Math.abs(dx) >= Math.abs(dy);
+    const prefer = horiz ? (dx >= 0 ? ['E', 'W'] : ['W', 'E']) : (dy >= 0 ? ['S', 'N'] : ['N', 'S']);
+    const alt    = horiz ? (dy >= 0 ? ['S', 'N'] : ['N', 'S']) : (dx >= 0 ? ['E', 'W'] : ['W', 'E']);
+    const put = ([da, db]) => (ADJ[a][da] == null && ADJ[b][db] == null) && (ADJ[a][da] = b, ADJ[b][db] = a, true);
+    put(prefer) || put(alt) || (ADJ[a]['x' + b] = b, ADJ[b]['x' + a] = a);  // last resort: keep them linked
+  };
+  for (let y = 0; y < MAPH; y++) for (let x = 0; x < MAPW; x++) {
+    const o = owner[y][x]; if (o < 0) continue;
+    for (const [dx, dy] of [[1, 0], [0, 1]]) { const nx = x + dx, ny = y + dy; if (walk(nx, ny) && owner[ny][nx] >= 0 && owner[ny][nx] !== o) link(o, owner[ny][nx]); }
+  }
+
+  FLOORS.push({ name: '', W: MAPW, H: MAPH, tiles, owner, glyph });
 }
 
-// Turn the room grid into a walkable tile floorplan (walls, doors, stairs).
-function buildTiles() {
-  FLOORS.forEach((f, fi) => {
-    const W = 1 + f.w * PX, H = 1 + f.h * PY;
-    const tiles = Array.from({ length: H }, () => new Array(W).fill(TILE.WALL));
-    const owner = Array.from({ length: H }, () => new Array(W).fill(-1));
-
-    // carve each room's interior as floor, owned by that room
-    for (let r = 0; r < f.h; r++) for (let c = 0; c < f.w; c++) {
-      const gi = f.cells[r * f.w + c];
-      const x0 = 1 + c * PX, y0 = 1 + r * PY;
-      for (let y = y0; y < y0 + RH; y++) for (let x = x0; x < x0 + RW; x++) { tiles[y][x] = TILE.FLOOR; owner[y][x] = gi; }
-      ROOM_META[gi].rect = { x: x0, y: y0, w: RW, h: RH, floor: fi };
-    }
-
-    // punch a doorway in each shared wall (one to the east, one to the south)
-    for (let r = 0; r < f.h; r++) for (let c = 0; c < f.w; c++) {
-      const R = ROOM_META[f.cells[r * f.w + c]].rect;
-      if (c < f.w - 1) tiles[R.y + (RH >> 1)][R.x + RW]        = TILE.DOOR;   // door to the east neighbour
-      if (r < f.h - 1) tiles[R.y + RH][R.x + (RW >> 1)]        = TILE.DOOR;   // door to the south neighbour
-    }
-
-    f.tiles = tiles; f.owner = owner; f.W = W; f.H = H;
-  });
-
-  // a staircase tile in the corner of each stair room
-  ROOM_META.forEach((m) => {
-    if (!m.stair) return;
-    const sx = m.rect.x + RW - 1, sy = m.rect.y;   // top-right corner
-    FLOORS[m.floor].tiles[sy][sx] = TILE.STAIR;
-    m.stairTile = { x: sx, y: sy };
-  });
+// which room can be reached from START_TILE via the room graph (the sealed room
+// is excluded until the passage opens). Used to keep essential clues reachable.
+function reachableRooms() {
+  const start = FLOORS[0].owner[START_TILE.y][START_TILE.x];
+  const seen = new Set([start]), st = [start];
+  while (st.length) { const c = st.pop(); for (const k of Object.keys(ADJ[c])) { const nb = ADJ[c][k]; if (k !== 'P' && !seen.has(nb)) { seen.add(nb); st.push(nb); } } }
+  return seen;
 }
 
 const DIR_WORD = { N: 'north', S: 'south', E: 'east', W: 'west', U: 'upstairs', D: 'downstairs' };
@@ -217,15 +242,20 @@ function newGame(names, diffKey) {
   const victim   = pick(guests);                     // one of the eight is the deceased
   let suspects   = guests.filter(n => n !== victim); // the remaining seven are suspects
 
-  // Pick the house at random: a one-story estate or a two-story mansion.
-  buildMansion(Math.random() < 0.5 ? 2 : 1);
+  // The house is the fixed one-story estate (the hand-drawn floorplan).
+  buildHouse();
 
-  const murderRoom = rnd(ROOMS.length);
+  // Essential clues go in rooms you can actually walk to (the sealed Sewing Room
+  // is off-limits until the passage opens, so it never hides a must-find clue).
+  const reach = [...reachableRooms()];
+  const pickReach = () => pick(reach);
+
+  const murderRoom = pickReach();
   const weapon     = pick(WEAPONS);
-  const glassRoom  = rnd(ROOMS.length);
+  const glassRoom  = pickReach();
 
-  // hide the bloodied weapon somewhere (the killer stashed it; may be anywhere)
-  let weaponRoom = rnd(ROOMS.length);
+  // hide the bloodied weapon somewhere reachable (the killer stashed it)
+  let weaponRoom = pickReach();
 
   // choose the murderer
   const murdererName = pick(suspects);
@@ -282,25 +312,16 @@ function newGame(names, diffKey) {
   const chosenDecoys = shuffle(DECOYS).slice(0, 4);
   chosenDecoys.forEach((d, i) => { if (decoyRooms[i] != null) objects[decoyRooms[i]] = { kind: 'decoy', label: d, examined: false }; });
 
-  // suspects' CURRENT positions (they roam; separate from their alibi trueRoom)
+  // suspects' CURRENT positions (they roam; separate from their alibi trueRoom).
+  // They use ordinary doors, never the passage, so they stay in reachable rooms.
   const positions = {};
-  suspects.forEach(n => { positions[n] = rnd(ROOMS.length); });
+  suspects.forEach(n => { positions[n] = pickReach(); });
 
   // A secret passage: a hidden panel (found by probing the wallpaper) opens a
-  // shortcut to a far part of the house. Two-story houses hide it as a route
-  // BETWEEN floors; one-story houses run it corner-to-opposite-corner. It stays
-  // hidden (no ADJ link, no tile) until you discover it.
-  let panelRoom, exitRoom;
-  if (STORIES === 2) {
-    panelRoom = pick(FLOORS[0].cells);
-    exitRoom  = pick(FLOORS[1].cells);
-  } else {
-    const f = FLOORS[0];
-    panelRoom = rnd(ROOMS.length);
-    const m = ROOM_META[panelRoom];
-    exitRoom  = f.cells[(f.h - 1 - m.r) * f.w + (f.w - 1 - m.c)];   // mirror corner
-    if (exitRoom === panelRoom) exitRoom = f.cells[(panelRoom + 1) % f.cells.length];
-  }
+  // shortcut to the sealed Sewing Room — the one room with no ordinary doorway.
+  // It stays hidden (no ADJ link, no tile) until you discover it.
+  const panelRoom = pick(reach.filter(r => r !== SEALED_ROOM && r !== murderRoom)) ?? pickReach();
+  const exitRoom  = SEALED_ROOM;
   const passage = { panelRoom, exitRoom, found: false, probes: 0, used: false };
 
   G = {
@@ -309,10 +330,9 @@ function newGame(names, diffKey) {
     suspects, murdererName, weapon, victim,
     murderRoom, weaponRoom, weaponAtScene, glassRoom,
     people, objects, positions, passage,
-    player: 0,               // player's current ROOM index (index 0 = the entrance)
-    pfloor: ROOM_META[0].floor,               // which floor the dot is on
-    px: ROOM_META[0].rect.x + (RW >> 1),      // the dot's tile position
-    py: ROOM_META[0].rect.y + (RH >> 1),
+    player: FLOORS[0].owner[START_TILE.y][START_TILE.x],  // ROOM you're standing in
+    pfloor: 0,                                            // one story: always floor 0
+    px: START_TILE.x, py: START_TILE.y,                   // the dot's tile (front door)
     hasGlass: false,
     turnsLeft: diff.turns,
     suspicion: 0,
@@ -323,7 +343,7 @@ function newGame(names, diffKey) {
     knownRoom: null,         // room name once the bloodstains are found
     knownWeapon: null,       // weapon name once weapon examined
     woundHint: null,
-    visited: new Set([0]),
+    visited: new Set([FLOORS[0].owner[START_TILE.y][START_TILE.x]]),
     markers: {},             // roomIndex -> Set of symbols discovered
     notes: [],               // alibi notes {name, text}
   };
@@ -349,36 +369,33 @@ function log(text, cls = 'evt') {
 }
 
 const escHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-const WALL_CH = '█';
+const BLOCK_RE = /[█▀▄▌▐▙▟▛▜▖▗▘▝▚▞]/;   // any wall glyph in the map
 
-// Draw each floor as an overhead line-art floorplan (a <pre> of tiles), with the
-// player as a dot walking through rooms/doorways and the guests as lettered dots.
+// Draw the hand-drawn floorplan exactly as authored (block glyphs and all), with
+// the player as a dot walking the open floor and the guests as lettered dots.
 function renderMap() {
   const map = $('#map');
   map.innerHTML = '';
 
   // overlays: guests (their initial) placed within their current room, then you
-  const overlay = FLOORS.map(() => ({}));
+  const overlay = {};
   const perRoom = {};
   G.suspects.forEach(n => {
     const ri = G.positions[n], m = ROOM_META[ri];
-    const k = perRoom[ri] = (perRoom[ri] || 0) + 1;
-    const off = k - 1;
-    const gx = m.rect.x + (off % m.rect.w);
-    const gy = m.rect.y + Math.min(m.rect.h - 1, (off / m.rect.w) | 0);
-    overlay[m.floor][gy + ',' + gx] = { ch: n[0].toUpperCase(), cls: 'g-guest' };
+    const off = (perRoom[ri] = (perRoom[ri] || 0) + 1) - 1;
+    const gx = m.center.x + (off % 2), gy = m.center.y + ((off / 2) | 0);
+    overlay[gy + ',' + gx] = { ch: n[0].toUpperCase(), cls: 'g-guest' };
   });
-  overlay[G.pfloor][G.py + ',' + G.px] = { ch: '@', cls: 'g-you' };
+  overlay[G.py + ',' + G.px] = { ch: '@', cls: 'g-you' };
+  // open-passage endpoints show a '=' where you can slip through
+  const P = G.passage;
+  if (P.found) [P.panelRoom, P.exitRoom].forEach(r => {
+    const t = ROOM_META[r].passageTile; if (t && !overlay[t.y + ',' + t.x]) overlay[t.y + ',' + t.x] = { ch: '=', cls: 'g-pass' };
+  });
 
-  FLOORS.forEach((f, fi) => {
+  FLOORS.forEach((f) => {
     const wrap = document.createElement('div');
     wrap.className = 'floor';
-    if (f.name) {
-      const label = document.createElement('div');
-      label.className = 'floor-label' + (G.pfloor === fi ? ' active' : '');
-      label.textContent = f.name;
-      wrap.appendChild(label);
-    }
     const pre = document.createElement('pre');
     pre.className = 'floormap';
     let html = '';
@@ -386,19 +403,15 @@ function renderMap() {
       let run = '', runCls = null;
       const flush = () => { if (run) { html += runCls ? `<span class="${runCls}">${escHtml(run)}</span>` : escHtml(run); run = ''; } };
       for (let x = 0; x < f.W; x++) {
-        const ov = overlay[fi][y + ',' + x];
+        const ov = overlay[y + ',' + x];
         let ch, cls;
         if (ov) { ch = ov.ch; cls = ov.cls; }
         else {
-          const t = f.tiles[y][x];
-          if (t === TILE.WALL)         { ch = WALL_CH; cls = 'g-wall'; }
-          else if (t === TILE.STAIR)   { ch = '≣';     cls = 'g-stair'; }
-          else if (t === TILE.PASSAGE) { ch = '=';     cls = 'g-pass'; }
-          else {                                   // FLOOR or DOOR (a gap)
-            const owner = f.owner[y][x];
-            if (owner >= 0 && owner === G.player) { ch = '·'; cls = 'g-here'; }  // the room you're in
-            else { ch = ' '; cls = null; }
-          }
+          const g = f.glyph[y][x];
+          if (BLOCK_RE.test(g))     { ch = g;   cls = 'g-wall'; }
+          else if (g === '─')       { ch = '─'; cls = 'g-stair'; }
+          else if (f.owner[y][x] === G.player) { ch = '·'; cls = 'g-here'; }  // floor of the room you're in
+          else { ch = ' '; cls = null; }
         }
         if (cls !== runCls) { flush(); runCls = cls; }
         run += ch;
@@ -414,12 +427,11 @@ function renderMap() {
 
 function renderRoom() {
   const i = G.player;
-  const meta = ROOM_META[i];
-  const floorName = (G.stories === 2 && FLOORS[meta.floor].name) ? ` <span class="dim">(${FLOORS[meta.floor].name})</span>` : '';
-  $('#room-title').innerHTML = ROOMS[i].toUpperCase() + floorName;
+  $('#room-title').innerHTML = ROOMS[i].toUpperCase();
   const adj = neighbors(i);
-  const dirs = Object.keys(adj).filter(d => d !== 'P').map(d => DIR_WORD[d]).join(', ');
-  let desc = `You are in the <span class="hl">${ROOMS[i]}</span>. Exits lead <span class="cyan">${dirs}</span>.`;
+  const dirs = Object.keys(adj).filter(d => DIR_WORD[d]).map(d => DIR_WORD[d]).join(', ') || 'nowhere obvious';
+  const flavor = ROOM_FLAVOR[ROOMS[i]] ? ` ${ROOM_FLAVOR[ROOMS[i]]}` : '';
+  let desc = `You are in the <span class="hl">${ROOMS[i]}</span>.${flavor} Exits lead <span class="cyan">${dirs}</span>.`;
   // secret-passage hint / exit
   const P = G.passage;
   if (i === P.panelRoom && !P.found) desc += ` The wallpaper's repeating pattern doesn't quite line up in one corner… <span class="dim">(SEARCH it.)</span>`;
@@ -556,21 +568,18 @@ function enterRoom(target, via) {
   spendTurn();
 }
 
-// Move the dot to another room and re-centre it there (used by stairs/passage).
+// Move the dot to another room and re-centre it there (used by the passage).
 function warpTo(tgt, via) {
-  const m = ROOM_META[tgt];
-  G.pfloor = m.floor;
-  G.px = m.rect.x + (RW >> 1);
-  G.py = m.rect.y + (RH >> 1);
+  const c = ROOM_META[tgt].center;
+  G.pfloor = 0;
+  G.px = c.x; G.py = c.y;
   enterRoom(tgt, via);
 }
 
-// Take the stairs (UP/DOWN) when you're standing in a staircase room.
-function takeStairs(d) {
+// One story — the "stairs" are just the front steps at the two entrances.
+function takeStairs() {
   if (G.over) return;
-  const tgt = (ADJ[G.player] || {})[d];
-  if (tgt == null) { log('There are no stairs in this room. Find a staircase (marked ≣).', 'sys'); return; }
-  warpTo(tgt, 'stairs');
+  log('This is a single-story estate — the staircases are only the front steps at the two entrances. There is no floor above or below.', 'sys');
 }
 
 // ---- Secret passage ----------------------------------------------------------
@@ -597,16 +606,14 @@ function searchWalls() {
   openPassageTile(P.exitRoom);
   addMarker(P.panelRoom, '<span class="g-pass">=</span>');
   addMarker(P.exitRoom, '<span class="g-pass">=</span>');
-  const dest = ROOMS[P.exitRoom] + (G.stories === 2 ? ` (${FLOORS[ROOM_META[P.exitRoom].floor].name})` : '');
-  log(`A panel clicks and slides smoothly aside, revealing a dark <span class="clue">secret passage</span>. It runs all the way to the <span class="hl">${dest}</span>. (Step into it, or use PASSAGE.)`, 'clue');
+  log(`A panel clicks and slides smoothly aside, revealing a dark <span class="clue">secret passage</span>. It runs all the way to the <span class="hl">${ROOMS[P.exitRoom]}</span> — the sealed room with no door. (Step into it, or use PASSAGE.)`, 'clue');
   spendTurn();
 }
 
 function openPassageTile(room) {
-  const R = ROOM_META[room].rect;
-  const sx = R.x, sy = R.y + RH - 1;          // bottom-left corner (opposite the stair)
-  FLOORS[R.floor].tiles[sy][sx] = TILE.PASSAGE;
-  ROOM_META[room].passageTile = { x: sx, y: sy };
+  const c = ROOM_META[room].center;            // the passage mouth sits at the room centre
+  FLOORS[0].tiles[c.y][c.x] = TILE.PASSAGE;
+  ROOM_META[room].passageTile = { x: c.x, y: c.y };
 }
 
 // Travel through the secret passage from either end.
@@ -764,10 +771,7 @@ function openAccuse() {
   s.innerHTML = G.suspects.map(n => `<option>${n}</option>`).join('');
   w.innerHTML = WEAPONS.map(x => `<option>${x.name}</option>`).join('');
   // value stays the plain room name (unique across floors); label notes the floor
-  r.innerHTML = ROOMS.map((n, i) => {
-    const fl = (G.stories === 2 && FLOORS[ROOM_META[i].floor].name) ? ` — ${FLOORS[ROOM_META[i].floor].name}` : '';
-    return `<option value="${n}">${n}${fl}</option>`;
-  }).join('');
+  r.innerHTML = ROOMS.map(n => `<option value="${n}">${n}</option>`).join('');
   if (G.knownWeapon) w.value = G.knownWeapon;
   if (G.knownRoom)   r.value = G.knownRoom;
   $('#accuse-modal').classList.remove('hidden');
@@ -883,8 +887,7 @@ function dumpNotebook() {
 function showHelp() {
   log('<span class="cyan">— COMMANDS —</span>', 'clue');
   [
-    'Move:      arrow keys walk your dot (@) through rooms and doorways (or N/S/E/W)',
-    'UP / DOWN  — take the stairs (≣) between floors; also PageUp / PageDown',
+    'Move:      arrow keys walk your dot (@) through the rooms and doorways (or N/S/E/W)',
     'LOOK       — describe the current room',
     'TAKE glass — pick up the magnifying glass',
     'EXAMINE    — inspect the clue in this room (bloodstains reveal the ROOM; the glass reveals more)',
@@ -912,13 +915,9 @@ function startGame() {
   $('#end-modal').classList.add('hidden');
   $('#log').innerHTML = '';
 
-  const house = G.stories === 2
-    ? 'a <span class="hl">two-story mansion</span> — its ground and upper floors linked by staircases'
-    : 'a sprawling <span class="hl">single-story estate</span>';
-  log(`<span class="clue">A scream echoes through ${house}. ${G.victim} has been murdered — the body already spirited away, but the killer left their mark on the floor of one room.</span>`);
+  log(`<span class="clue">It is a dark and stormy night. A scream echoes through a sprawling <span class="hl">single-story estate</span>. ${G.victim} has been murdered — the body already spirited away by persons unknown, but the killer left their mark on the floor of one room.</span>`);
   log(`The guests — <span class="cyan">${G.suspects.join(', ')}</span> — are all still here. One of them is the murderer.`);
-  if (G.stories === 2) log(`Rooms sit on two floors; stand in a staircase room (marked <span class="g-stair">≣</span>) and press <span class="cyan">UP / DOWN</span> (or PageUp/PageDown) to move between them.`, 'sys');
-  log(`Find the bloodstained room, find the weapon, and unmask the liar before your time runs out. Type <span class="cyan">HELP</span> to begin.`);
+  log(`Walk your dot (<span class="g-you">@</span>) through the house with the <span class="cyan">arrow keys</span>. Find the bloodstained room, find the weapon, and unmask the liar before your time runs out. Type <span class="cyan">HELP</span> to begin.`);
   renderAll();
   $('#cmd-input').focus();
 

@@ -161,7 +161,7 @@ html, body {
   padding: 6px 8px;
   border: 1px solid var(--border);
 }
-.floormap .g-wall  { color: #c04cc0; }               /* magenta walls, like the original */
+.floormap .g-wall  { color: #b4b4b4; }               /* solid gray walls, like the original */
 .floormap .g-you   { color: #ffe000; font-weight: bold; text-shadow: 0 0 6px rgba(255,224,0,0.6); }
 .floormap .g-guest { color: var(--cyan); }
 .floormap .g-stair { color: #8ae234; }

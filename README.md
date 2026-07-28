@@ -40,40 +40,38 @@ the notebook, and find the liar.
 
 This invariant is checked in `test/solvable.test.js`.
 
-### The house (one story or two)
+### The house
 
-The map is an **overhead line-art floorplan**, like the original: walled rooms
-joined by **doorways**, and your character is a **dot (`@`)** that walks through
-them (guests show as lettered dots). As in the original, each game is set in one
-of two houses, **chosen at random**:
+The map is the **exact overhead floorplan of the one-story estate**, transcribed
+character-for-character from the original as a monospaced block-glyph grid — full
+blocks (`█`) for the outer walls, half blocks (`▀▄▌▐` and corners) for the interior
+walls, and thin lines (`─`) for the staircase steps at the two front entrances.
+Your character is a **dot (`@`)** that walks the open floor; any block glyph is
+solid, spaces are floor, and the guests show as lettered dots.
 
-- a sprawling **single-story estate** — one floor of sixteen rooms, and
-- a **two-story mansion** — two floors (Ground and Upper) drawn side by side
-  with a break between them, joined by **staircases** (`≣`) at opposite corners.
-
-Both hold sixteen rooms. You walk with the arrow keys; stepping through a
-doorway into a new room is what costs a move. To change floors, stand in a
-staircase room and press **UP** / **DOWN** (or PageUp/PageDown). The murder can
-happen on either floor, and the guests roam between floors too. The solvability
-test checks both that every room is reachable through the room graph and that
-the tile floorplan itself is walkable (doorways actually connect the rooms).
+The estate holds **twelve named rooms** — Parlor, Sewing Room, Study, West Hall,
+Grand Foyer, Dining Hall, Ballroom, Music Room, East Hall, Master Bedroom,
+Bathroom and Kitchen. You walk with the arrow keys; stepping into a new room is
+what costs a move. The murder can happen in any room you can reach, and the
+guests roam the house too. The solvability test checks that every essential clue
+is reachable through the room graph *and* that the tile floorplan itself is
+walkable from the front door.
 
 ### The secret passage
 
-Every house hides a **secret passage**. Somewhere the wallpaper's pattern
-"doesn't quite line up in one corner" — **`SEARCH`** that room and, after a
-little probing, a panel slides aside to reveal a hidden route to a far part of
-the house (in a two-story mansion, it links the two floors). Once open it's
-marked `=` at both ends; step into it or use **`PASSAGE`** to slip through — a
-shortcut only *you* know about (the guests never use it). Mind the black
-obelisk in the dark.
+One room — the **Sewing Room** — is sealed: it has no ordinary doorway, matching
+the original's rooms with "no apparent opening." The only way in is a **secret
+passage**. Somewhere the wallpaper's pattern "doesn't quite line up in one
+corner" — **`SEARCH`** that room and, after a little probing, a panel slides
+aside to reveal a hidden route through to the sealed room. Once open it's marked
+`=` at both ends; step into it or use **`PASSAGE`** to slip through — a shortcut
+only *you* know about (the guests never use it). Mind the black obelisk in the
+dark.
 
 ## How to play
 
 - **Move**: **arrow keys** walk your dot (`@`) through rooms and doorways
   (`N`/`S`/`E`/`W` step one tile too). Entering a new room spends a move.
-- **Stairs**: in a two-story house, stand in a staircase room and press
-  **`UP`**/**`DOWN`** (or PageUp/PageDown) to cross between floors.
 - **`TAKE glass`**: pick up the magnifying glass (required before you can examine clues).
 - **`EXAMINE`**: inspect the clue in the current room (or click the object).
 - **`QUESTION <name>`**: ask a guest for their alibi (or click a guest). **Don't over-ask** — the murderer notices.
@@ -108,7 +106,7 @@ test/        headless solvability + Playwright browser tests
 
 ```
 npm test                       # runs both suites
-node test/solvable.test.js     # 20k cases: uniquely solvable + mansion well-formed
+node test/solvable.test.js     # 20k cases: uniquely solvable + house well-formed
 node test/browser.smoke.js     # Playwright: win path + death path, 0 console errors
 ```
 

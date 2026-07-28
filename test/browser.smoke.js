@@ -5,6 +5,26 @@
 */
 const { chromium } = require('playwright');
 const path = require('path');
+const fs = require('fs');
+
+// Use whatever Chromium is on disk (the sandbox ships one that may not match the
+// npm Playwright's pinned build). Prefer an explicit override, then a discovered
+// binary under PLAYWRIGHT_BROWSERS_PATH, else Playwright's own default.
+function chromiumPath() {
+  if (process.env.SLEUTH_CHROMIUM && fs.existsSync(process.env.SLEUTH_CHROMIUM)) return process.env.SLEUTH_CHROMIUM;
+  const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
+  try {
+    for (const d of fs.readdirSync(base)) {
+      for (const rel of ['chrome-linux/chrome', 'chrome-linux/headless_shell']) {
+        const p = path.join(base, d, rel);
+        if (d.startsWith('chromium') && fs.existsSync(p)) return p;
+      }
+    }
+  } catch { /* fall through to default */ }
+  return null;
+}
+const EXE = chromiumPath();
+const launchOpts = EXE ? { executablePath: EXE } : {};
 
 async function startGame(browser, errors) {
   const page = await browser.newPage();
@@ -31,7 +51,7 @@ async function accuse(page, { who, weapon, room }) {
 }
 
 (async () => {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch(launchOpts);
   const errors = [];
 
   // ----- 1. basic interactivity + accuse modal populates -----
@@ -71,7 +91,7 @@ async function accuse(page, { who, weapon, room }) {
   await browser.close();
 
   const checks = [
-    ['selects populated', counts.suspects >= 5 && counts.weapons === 8 && counts.rooms === 16],
+    ['selects populated', counts.suspects >= 5 && counts.weapons === 8 && counts.rooms === 12],
     ['correct accusation wins', /SOLVED/.test(winRes.title) && /win/.test(winRes.cls)],
     ['wrong accusation kills', /DEAD/.test(loseRes.title) && /lose/.test(loseRes.cls)],
     ['no console errors', errors.length === 0],
