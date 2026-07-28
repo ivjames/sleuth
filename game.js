@@ -155,10 +155,11 @@ function reachableRooms() {
 //   entry — a hidden door in the sealed chamber's wall. `a` is the floor tile
 //           just outside it, `b` the chamber tile just inside; walking from a
 //           through the wall to b slips you in (you find it by bumping walls).
-//   exitTile — a chamber tile that, once you step on it, drops you out into
-//           exitDest, a single far room fixed for the whole game.
-//   entryRoom / exitDest — used so guests can occasionally wander through the
-//           passage too, so you can run into one in the dark.
+//   exitTile — a chamber tile that, once you step on it, drops you out into a
+//           room chosen fresh at RANDOM each time you use it (only the spot is
+//           fixed, not where it sends you).
+//   entryRoom — the room the door opens from, so guests can wander into the
+//           passage through it and you can run into one in the dark.
 function buildPassage(reachArr) {
   const f = FLOORS[0], reach = new Set(reachArr);
   const chamber = [];
@@ -174,9 +175,7 @@ function buildPassage(reachArr) {
   const entryRoom = f.owner[entry.a.y][entry.a.x];
   const rest = chamber.filter(c => !(c.x === entry.b.x && c.y === entry.b.y));
   const exitTile = pick(rest.length ? rest : chamber);
-  const destCands = reachArr.filter(r => r !== SEALED_ROOM && r !== entryRoom);
-  const exitDest = pick(destCands.length ? destCands : reachArr.filter(r => r !== SEALED_ROOM));
-  return { entry, entryRoom, exitTile, exitDest };
+  return { entry, entryRoom, exitTile };
 }
 
 const DIR_WORD = { N: 'north', S: 'south', E: 'east', W: 'west', U: 'upstairs', D: 'downstairs' };
@@ -252,8 +251,8 @@ function roamNeighbors(i) {
   const base = Object.values(ADJ[i] || {});
   const P = G && G.passage;
   if (!P) return base;
-  if (i === SEALED_ROOM) return [...base, P.entryRoom, P.exitDest];
-  if (i === P.entryRoom || i === P.exitDest) return [...base, SEALED_ROOM];
+  if (i === SEALED_ROOM) return [...base, P.entryRoom];
+  if (i === P.entryRoom) return [...base, SEALED_ROOM];
   return base;
 }
 const $ = sel => document.querySelector(sel);
@@ -551,12 +550,14 @@ function stepDir(dx, dy) {
   if (f.tiles[ny][nx] === TILE.WALL) return;   // blocked, silently
   G.px = nx; G.py = ny;
 
-  // Inside the passage, one spot in the dark drops you out into a far room.
+  // Inside the passage, the exit spot drops you out into a RANDOM room (fresh
+  // each time — only the spot itself is fixed).
   if (G.player === SEALED_ROOM && nx === P.exitTile.x && ny === P.exitTile.y) {
-    const c = ROOM_META[P.exitDest].center;
+    const dest = pick([...reachableRooms()].filter(r => r !== SEALED_ROOM));
+    const c = ROOM_META[dest].center;
     G.px = c.x; G.py = c.y;
     log('The floor drops away in the dark — you tumble through and stagger out somewhere new.', 'clue');
-    enterRoom(P.exitDest);
+    enterRoom(dest);
     return;
   }
 

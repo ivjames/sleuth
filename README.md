@@ -68,10 +68,11 @@ isn't a command and it isn't marked. You find it the way you'd expect to: by
 the start of each game — quietly gives way and slips you *inside* the passage.
 
 Once in, you're in the dark with a cold stone obelisk, not in any normal room.
-Feel your way around: one spot on the floor (also fixed at the start) **drops you
-out into a far room** — a single destination chosen for the whole game. It's a
-shortcut, but you're not the only one who knows it: **a guest may wander into the
-passage too**, so mind who you meet in the dark.
+Feel your way around: one spot on the floor (the spot is fixed at the start)
+**drops you out into a random room** — somewhere different **each time** you use
+it. So the two fixed things are *where* you get in and *where* the exit spot is;
+where it flings you is a fresh surprise. And you're not the only one who knows the
+passage: **a guest may wander into it too**, so mind who you meet in the dark.
 
 ## How to play
 
