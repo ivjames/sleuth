@@ -110,7 +110,7 @@ index.html   markup + screens
 styles.css   CGA/amber-phosphor DOS terminal look (scanlines and all)
 game.js      the whole engine — case generation, alibi logic, turns, endgame
 server.js    zero-dependency static server (PORT, default 8065)
-bin/sleuth   operate CLI (deploy / restart / logs / test)
+bin/sleuth   operate CLI (deploy / start / restart / logs / status / test)
 test/        headless solvability + Playwright browser tests
 ```
 
@@ -132,18 +132,42 @@ sandbox):
 
 ```
 provision-site sleuth ivjames/sleuth        # DO DNS + dir + clone + nginx + TLS
-cd /var/www/sleuth
-npm ci --omit=dev
 ln -sf /var/www/sleuth/bin/sleuth /usr/local/bin/sleuth
-sleuth start                                # pm2 start on the assigned port + pm2 save
+sleuth deploy                               # npm ci --omit=dev, first pm2 start on the assigned port, probe, save
 ```
 
 **Don't pass `--port`.** `provision-site` picks the next free port in 8060–8099
 by scanning both live sockets and existing nginx vhosts, and writes it to
-`/var/www/sleuth/.env`; `bin/sleuth` reads the port from there, so the app,
-pm2, and the nginx proxy all agree without ever stomping another site.
-`provision-site` clones the repo's **default branch** (`main`). Thereafter
-`sleuth deploy` does git pull → install → pm2 restart.
+`/var/www/sleuth/.env`; `bin/sleuth` reads `PORT` from there (with a builtin
+parser — it never sources the file) and hands it to pm2, which is the only way
+it reaches `server.js`. So the app, pm2, and the nginx proxy all agree without
+ever stomping another site. `provision-site` clones the repo's **default
+branch** (`main`).
+
+`sleuth deploy` does the first `pm2 start` itself when nothing named `sleuth`
+is registered, from `START_CMD` at the top of `bin/sleuth`
+(`server.js --name sleuth`); `sleuth start` is the same registration on its
+own, without the sync and install. Every pm2 call the CLI makes is scrubbed —
+`env -i` plus `PATH`, `HOME`, `LANG`, `PM2_HOME`/`TERM` if set, and `PORT` —
+so nothing from the shell that ran it reaches pm2, the process, or
+`~/.pm2/dump.pm2`. Don't `pm2 start` or `pm2 restart --update-env` by hand.
+
+Thereafter, once a change is merged to `main` (merging does not deploy):
+
+```
+sleuth deploy          # git fetch + reset --hard origin/main, npm ci --omit=dev, pm2 restart, probe, save
+sleuth restart         # pm2 restart + probe
+sleuth logs [n]        # tail pm2 logs (n lines, default 80; pm2 logs flags pass through)
+sleuth status          # HEAD, pm2 state, port, local + public probe, cert days
+sleuth test            # npm test
+```
+
+`deploy` hard-resets the checkout to `origin/main` — a tracked file edited on
+the droplet is destroyed silently; `.env` and `node_modules/` are gitignored
+and survive. It exits non-zero (and does not `pm2 save`) when nothing answers
+on `127.0.0.1:<PORT>` afterwards; `pm2 save` also only runs when every
+registered pm2 process is online. Overrides: `SLEUTH_FQDN`, `SLEUTH_BRANCH`,
+`SLEUTH_PORT` (default: `.env` `PORT`, else 8065), `SLEUTH_PROBE_TRIES`.
 
 ## Credits
 

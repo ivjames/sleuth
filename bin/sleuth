@@ -1,51 +1,339 @@
 #!/usr/bin/env bash
-# Operate CLI for the Sleuth site — matches the lab980 one-dir-per-site shape.
-#   sleuth deploy   git pull -> install -> restart under pm2
-#   sleuth restart  restart the pm2 process
-#   sleuth logs     tail the pm2 logs
-#   sleuth test     run the game's test suite
-#   sleuth start    start under pm2 (first run)
+# sleuth — operate CLI for sleuth.lab980.com (the Sleuth murder mystery).
+#
+# A proxied app site: nginx fronts a pm2-managed Node process (server.js, a
+# zero-dependency static server) on 127.0.0.1:<PORT>, where PORT is whatever
+# provision-site wrote into ./.env. Bring-up is `provision-site` (see
+# lab980's CLAUDE.md); this script owns everything after that:
+#
+#   sleuth deploy    sync to origin/main -> npm ci -> pm2 start/restart -> probe -> save
+#   sleuth start     first registration under pm2 (what deploy does when nothing is registered)
+#   sleuth restart   pm2 restart + probe, no code change
+#   sleuth logs [n]  tail the pm2 logs for this app (n lines, default 80)
+#   sleuth status    HEAD, pm2 state, local + public probe, cert days
+#   sleuth test      run the game's test suite (npm test)
+#
+# Env overrides:
+#   SLEUTH_FQDN          default sleuth.lab980.com
+#   SLEUTH_BRANCH        default main
+#   SLEUTH_PORT          default: PORT from ./.env, else 8065
+#   SLEUTH_PROBE_TRIES   default 10 (one second apart)
+#
+# The app dir is wherever this script's checkout lives (normally
+# /var/www/sleuth) — derived from the script's own path, so the
+# /usr/local/bin symlink resolves back here.
 set -euo pipefail
 
+SELF="$(readlink -f "$0")"
+ROOT="$(cd "$(dirname "$SELF")/.." && pwd)"
+FQDN="${SLEUTH_FQDN:-sleuth.lab980.com}"
+BRANCH="${SLEUTH_BRANCH:-main}"
+PROBE_TRIES="${SLEUTH_PROBE_TRIES:-10}"
 APP="sleuth"
-DIR="/var/www/sleuth"
-ENV_PORT="${PORT:-}"          # an explicit `PORT=… sleuth …` override, if any
+ENV_FILE="$ROOT/.env"
 
-# resolve DIR to the repo this script lives in when not on the droplet
-if [[ ! -d "$DIR" ]]; then
-  DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-fi
-cd "$DIR"
+# .env reading with shell builtins only — not `set -a; . .env`, which would
+# load every line of the file into this script's own environment and hand it
+# to everything it runs. PORT is the one value wanted here, and it is not a
+# secret; nothing else in the file is read.
+env_file_get() {  # $1=file $2=KEY -> value on stdout ('' if absent).
+  local file="$1" key="$2" line val found=0
+  [ -r "$file" ] || return 0
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"
+    line="${line#"${line%%[![:space:]]*}"}"                 # ltrim
+    case "$line" in ''|'#'*) continue;; esac
+    case "$line" in
+      export[[:space:]]*) line="${line#export}"; line="${line#"${line%%[![:space:]]*}"}";;
+    esac
+    case "$line" in "$key="*) ;; *) continue;; esac
+    val="${line#*=}"
+    case "$val" in
+      \"*\") val="${val#\"}"; val="${val%\"}";;              # "quoted"
+      \'*\') val="${val#\'}"; val="${val%\'}";;              # 'quoted'
+      *)     val="${val%"${val##*[![:space:]]}"}";;          # bare: rtrim
+    esac
+    found=1                                                  # last one wins, like a shell
+  done < "$file"
+  [ "$found" -eq 1 ] && printf '%s' "$val"
+  return 0
+}
 
 # The port is whatever provision-site assigned and wrote to .env (it picks the
-# next free port, checking live sockets AND existing nginx vhosts). Never hardcode
-# it — that's how you stomp another site. Order of precedence: explicit env > .env > 8065.
-[[ -f "$DIR/.env" ]] && { set -a; . "$DIR/.env"; set +a; }
-PORT="${ENV_PORT:-${PORT:-8065}}"
+# next free 8060+ port, checking live sockets AND existing nginx vhosts).
+# Never hardcode it — that is how you stomp another site. Precedence:
+# SLEUTH_PORT > .env PORT > 8065 (server.js's own default). server.js reads
+# process.env.PORT and nothing else, so the value has to reach the process
+# through pm2: pm2_clean passes it, and the live registration carries it.
+PORT="${SLEUTH_PORT:-$(env_file_get "$ENV_FILE" PORT)}"
+PORT="${PORT:-8065}"
 
-cmd="${1:-help}"
-case "$cmd" in
-  deploy)
-    git pull --ff-only
-    npm ci --omit=dev
-    pm2 restart "$APP" --update-env || PORT="$PORT" pm2 start server.js --name "$APP"
-    pm2 save
-    echo "Deployed $APP on port $PORT."
-    ;;
-  start)
-    PORT="$PORT" pm2 start server.js --name "$APP"
-    pm2 save
-    ;;
-  restart)
-    pm2 restart "$APP" --update-env
-    ;;
-  logs)
-    pm2 logs "$APP" --lines "${2:-80}"
-    ;;
-  test)
-    npm test
-    ;;
-  *)
-    echo "usage: sleuth {deploy|start|restart|logs|test}"
-    ;;
+# The `pm2 start` argv that registers this app the FIRST time. Every later
+# deploy is a `pm2 restart $APP` of that registration, but on a fresh box (or
+# after `pm2 delete`) nothing is registered and restart fails. This
+# reproduces the live registration: server.js under node, fork mode, PORT in
+# the process env (from pm2_clean).
+START_CMD=(server.js --name "$APP")
+
+c_blue=$'\033[1;34m'; c_yellow=$'\033[1;33m'; c_red=$'\033[1;31m'; c_off=$'\033[0m'
+log()  { printf '%s==>%s %s\n' "$c_blue" "$c_off" "$*"; }
+warn() { printf '%swarn:%s %s\n' "$c_yellow" "$c_off" "$*" >&2; }
+die()  { printf '%serror:%s %s\n' "$c_red" "$c_off" "$*" >&2; exit 1; }
+
+usage() {
+  cat <<'USAGE'
+sleuth — operate sleuth.lab980.com (node static server under pm2, behind nginx).
+
+Usage:
+  sleuth deploy            sync, npm ci --omit=dev, pm2 start/restart, probe, save
+  sleuth start             first pm2 registration only (deploy does this too); refuses if registered
+  sleuth restart           pm2 restart + probe
+  sleuth logs [n]          tail pm2 logs (n lines, default 80; other pm2 logs flags pass through)
+  sleuth status            HEAD + pm2 + local/public probe + cert
+  sleuth test              npm test (solvability + Playwright smoke)
+
+PORT comes from ./.env (provision-site writes it); the CLI hands it to pm2,
+which is the only way it reaches server.js.
+
+Env: SLEUTH_FQDN, SLEUTH_BRANCH (default main), SLEUTH_PORT (default: .env PORT, else 8065),
+     SLEUTH_PROBE_TRIES (default 10).
+USAGE
+}
+
+# The app runs as root under pm2, and pm2 keeps one daemon, process list and
+# dump PER HOME — root's is /root/.pm2. Run as anyone else, or as uid 0 with
+# someone else's HOME (`su root` without `-`, `sudo` preserving HOME), and
+# every pm2 call here talks to a different daemon: `status` says "not
+# registered" while the site is up, and `deploy` starts a second copy.
+need_root() {
+  [ "$(id -u)" -eq 0 ] || die "$1 must run as root (the app's pm2 daemon is root's)."
+  local rhome; rhome="$(getent passwd root | cut -d: -f6)"
+  [ -n "${PM2_HOME:-}" ] || [ "${HOME:-}" = "$rhome" ] \
+    || die "$1: HOME is '${HOME:-}' but root's home is $rhome — pm2 keys its daemon and dump off HOME, so this would talk to a different pm2. Use \`sudo -i\` or \`su -\` (or set PM2_HOME on purpose)."
+}
+
+# ---------------------------------------------------------------------------
+# pm2. Every pm2 call goes through pm2_clean, which launches it from an EMPTY
+# environment plus the handful of variables pm2 itself needs and PORT. pm2
+# copies the environment of the `pm2 start` call into the process, and from
+# there into ~/.pm2/dump.pm2 on save — so a plain `pm2 start` (or `pm2 restart
+# --update-env`, which re-captures the shell on every deploy) would give
+# whatever the calling shell carried an indefinite on-disk lifetime in the
+# dump. The daemon itself keeps the environment of whichever call first
+# spawned it, which is why jlist and logs go through here as well.
+#
+# PORT is handed in because it is not a secret, this script knows it (from
+# .env), and server.js reads it from process.env — an app started from
+# `env -i` would otherwise fall back to 8065 whatever .env says. There is
+# nothing else this app needs.
+# ---------------------------------------------------------------------------
+pm2_clean() {
+  env -i PATH="$PATH" HOME="$HOME" ${PM2_HOME:+PM2_HOME="$PM2_HOME"} \
+    ${TERM:+TERM="$TERM"} LANG=C.UTF-8 PORT="$PORT" pm2 "$@"
+}
+
+# `pm2 jlist` is JSON only on a good day: pm2 writes chatter to STDOUT ahead
+# of it — `[PM2] Spawning PM2 daemon…` when the daemon was down, `>>>> In-memory
+# PM2 is out-of-date` after a pm2 upgrade. So the JSON is taken from the first
+# line that starts one and parses; anything else is reported as unknown (exit
+# 1), never guessed as "not registered" — deploy would answer that guess with
+# a second `pm2 start` against a live app.
+PM2_JSON='import json, sys
+lines = sys.stdin.read().split("\n")
+for i, line in enumerate(lines):
+    if line[:1] in "[{":
+        try:
+            procs = json.loads("\n".join(lines[i:]))
+        except ValueError:
+            continue
+        if isinstance(procs, list):
+            json.dump(procs, sys.stdout); sys.exit(0)
+sys.exit("no parseable JSON in pm2 jlist output")'
+pm2_jlist() {   # -> JSON array on stdout; 1 with the reason on stderr
+  local jl
+  jl="$(pm2_clean jlist 2>/dev/null)" || { echo "pm2 jlist failed" >&2; return 1; }
+  printf '%s' "$jl" | python3 -c "$PM2_JSON"
+}
+
+# "not registered", "<status>  mode=…", or "unknown (…)" with exit 1.
+pm2_state() {
+  local js
+  js="$(pm2_jlist 2>&1)" || { printf 'unknown (%s)\n' "$js"; return 1; }
+  printf '%s' "$js" | python3 -c 'import json, sys
+p = [x for x in json.load(sys.stdin) if x.get("name") == sys.argv[1]]
+if not p: print("not registered"); raise SystemExit
+e = p[0].get("pm2_env", {})
+print("%s  mode=%s  restarts=%s  uptime-since=%s" % (
+  e.get("status"), e.get("exec_mode"), e.get("restart_time"), e.get("pm_uptime")))' "$APP"
+}
+
+# Names of registered processes that are not online (empty = all online);
+# exit 1 with the reason when the list cannot be read.
+pm2_not_online() {
+  local js
+  js="$(pm2_jlist 2>&1)" || { printf '%s' "$js"; return 1; }
+  printf '%s' "$js" | python3 -c 'import json, sys
+print(" ".join(x.get("name", "?") for x in json.load(sys.stdin)
+               if x.get("pm2_env", {}).get("status") != "online"))'
+}
+
+save_if_online() {
+  # pm2 save overwrites the dump with whatever is running right now, so a save
+  # while anything is down persists a dump that comes back short on the next
+  # reboot. The box rule (lab980 CLAUDE.md) is EVERY app online before a save,
+  # not just this one; otherwise say so and leave the previous dump alone.
+  local bad
+  if ! bad="$(pm2_not_online)"; then
+    warn "skipping pm2 save: cannot read the pm2 process list ($bad)"; return 0
+  fi
+  if [ -n "$bad" ]; then
+    warn "not every pm2 process is online ($bad) — skipping pm2 save so the dump keeps its last good state. Run \`pm2 save\` yourself once they are."
+    return 0
+  fi
+  pm2_clean save
+}
+
+probe() {
+  # Local first, then public: a healthy app behind a broken vhost and a dead
+  # app behind a fine vhost look identical from the outside, and telling them
+  # apart is most of the diagnosis. Both are printed whatever happens.
+  #
+  # Pass/fail is the LOCAL port answering HTTP at all — any status code —
+  # retried up to PROBE_TRIES times a second apart, since a Node app is often
+  # still booting when pm2 first reports it online. The public side only
+  # warns: it also depends on DNS and TLS.
+  local lcode="" pcode i
+  for ((i = 1; i <= PROBE_TRIES; i++)); do
+    lcode="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "http://127.0.0.1:$PORT/" || true)"
+    [ "$lcode" != "000" ] || lcode=""   # curl's code for "never connected"
+    [ -z "$lcode" ] || break
+    sleep 1
+  done
+  pcode="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "https://$FQDN/" || true)"
+  [ "$pcode" != "000" ] || pcode=""
+  printf 'local:     http://127.0.0.1:%s/  ->  HTTP %s\n' "$PORT" "${lcode:-unreachable after $PROBE_TRIES tries}"
+  printf 'public:    https://%s/  ->  HTTP %s\n' "$FQDN" "${pcode:-unreachable}"
+  [ -n "$lcode" ] || return 1
+  case "$pcode" in
+    ""|5*) warn "app answers locally but https://$FQDN/ is ${pcode:-unreachable} — look at nginx / DNS / TLS, not the app";;
+  esac
+}
+
+first_start() {
+  # The one `pm2 start`. Shared by `deploy` (when nothing is registered) and
+  # `start`. pm2 gets PORT from pm2_clean; server.js reads nothing else.
+  log "pm2 start ${START_CMD[*]}  ($APP, first registration, PORT=$PORT)"
+  pm2_clean start "${START_CMD[@]}"
+  local state
+  state="$(pm2_state)" || die "pm2 start ran but the process list is unreadable — $state"
+  [ "$state" != "not registered" ] \
+    || die "pm2 start ran but nothing named $APP is registered — START_CMD must name it (--name $APP)."
+}
+
+cmd_deploy() {
+  [ $# -eq 0 ] || die "unknown deploy option: $1 (see --help)"
+  need_root deploy
+  command -v pm2 >/dev/null || die "pm2 not found on PATH."
+  cd "$ROOT"
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "$ROOT is not a git clone."
+
+  # Decide start-vs-restart BEFORE the sync: a first deploy that cannot start
+  # should fail here, not after a hard reset and an npm ci it did not need.
+  local state
+  state="$(pm2_state)" || die "cannot tell whether $APP is registered — $state. Sort pm2 out first (pm2 ls), then deploy again."
+  [ -f "$ENV_FILE" ] || warn "$ENV_FILE is missing — provision-site normally writes PORT there; using PORT=$PORT"
+
+  local before after
+  before="$(git rev-parse --short HEAD)"
+  log "Syncing $ROOT to origin/$BRANCH"
+  git fetch --quiet origin "$BRANCH"
+  git reset --hard --quiet "origin/$BRANCH"
+  after="$(git rev-parse --short HEAD)"
+  if [ "$before" = "$after" ]; then log "already current ($after)"
+  else log "$before -> $after"; git --no-pager log --oneline "$before..$after"; fi
+
+  # npm ci, not npm install: the lockfile is the deployed dependency set.
+  # --omit=dev: the game has no runtime dependencies; Playwright is dev-only.
+  # No build step — the game is static files served as-is.
+  log "npm ci --omit=dev"; npm ci --omit=dev
+
+  case "$state" in
+    "not registered") first_start;;
+    *) log "pm2 restart $APP"; pm2_clean restart "$APP";;
+  esac
+  probe || die "$APP is not answering on 127.0.0.1:$PORT — deploy failed, nothing saved. See: sleuth logs"
+  save_if_online
+  log "deployed: $(git rev-parse --short HEAD)  $(git log -1 --format=%s)"
+}
+
+cmd_start() {
+  # Kept from the old CLI as the explicit "register it" step the README
+  # describes. It does not sync or install — that is deploy's job — and it
+  # refuses to double-register a live app.
+  [ $# -eq 0 ] || die "start takes no options (see --help)"
+  need_root start
+  command -v pm2 >/dev/null || die "pm2 not found on PATH."
+  cd "$ROOT"
+  [ -d node_modules ] || warn "no node_modules — fine for the game itself (zero runtime deps), but \`sleuth deploy\` is the usual first step"
+  local state
+  state="$(pm2_state)" || die "cannot tell whether $APP is registered — $state. Sort pm2 out first (pm2 ls), then retry."
+  [ "$state" = "not registered" ] || die "$APP is already registered with pm2 ($state) — use: sleuth restart"
+  first_start
+  probe || die "$APP is not answering on 127.0.0.1:$PORT after start, nothing saved. See: sleuth logs"
+  save_if_online
+}
+
+cmd_restart() {
+  [ $# -eq 0 ] || die "restart takes no options (see --help)"
+  need_root restart
+  command -v pm2 >/dev/null || die "pm2 not found on PATH."
+  local state
+  state="$(pm2_state)" || die "cannot tell whether $APP is registered — $state. Sort pm2 out first (pm2 ls), then retry."
+  [ "$state" != "not registered" ] || die "$APP is not registered with pm2 — nothing to restart. First start is: sleuth deploy"
+  log "pm2 restart $APP"
+  pm2_clean restart "$APP"
+  probe || die "$APP is not answering on 127.0.0.1:$PORT after restart. See: sleuth logs"
+}
+cmd_logs() {
+  # `sleuth logs 80` (the old positional form) and `sleuth logs --lines 80`
+  # both work: a bare leading number becomes --lines, and the old default of
+  # 80 is added only when the caller gave no line count of their own.
+  local args=("$@") a has_lines=0
+  case "${1:-}" in ''|*[!0-9]*) ;; *) args=(--lines "$1" "${@:2}");; esac
+  for a in "${args[@]+"${args[@]}"}"; do
+    case "$a" in --lines|--lines=*|-n) has_lines=1;; esac
+  done
+  [ "$has_lines" -eq 1 ] || args=(--lines 80 "${args[@]+"${args[@]}"}")
+  pm2_clean logs "$APP" "${args[@]}"
+}
+cmd_test()    { [ $# -eq 0 ] || die "test takes no options (see --help)"; cd "$ROOT"; npm test; }
+
+cmd_status() {
+  cd "$ROOT"
+  printf 'checkout:  %s  %s\n' "$(git rev-parse --short HEAD)" "$(git log -1 --format=%s)"
+  printf 'pm2:       %s\n' "$(pm2_state || true)"
+  if [ -n "${SLEUTH_PORT:-}" ]; then printf 'port:      %s  (SLEUTH_PORT override)\n' "$PORT"
+  elif [ -f "$ENV_FILE" ]; then printf 'port:      %s  (from .env)\n' "$PORT"
+  else printf 'port:      %s  (no .env — server.js default)\n' "$PORT"; fi
+  probe || true   # status reports, it does not judge — keep going to the cert
+  local pem="/etc/letsencrypt/live/$FQDN/cert.pem"
+  if [ -r "$pem" ]; then
+    local end days
+    end="$(openssl x509 -enddate -noout -in "$pem" | cut -d= -f2)"
+    days=$(( ($(date -d "$end" +%s) - $(date +%s)) / 86400 ))
+    printf 'cert:      %s days remaining (expires %s)\n' "$days" "$end"
+  else
+    printf 'cert:      (run as root to read expiry)\n'
+  fi
+}
+
+case "${1:-}" in
+  deploy)  shift; cmd_deploy "$@";;
+  start)   shift; cmd_start "$@";;
+  restart) shift; cmd_restart "$@";;
+  logs)    shift; cmd_logs "$@";;
+  status)  shift; cmd_status "$@";;
+  test)    shift; cmd_test "$@";;
+  -h|--help|help|"") usage;;
+  *) die "unknown command: $1 (see --help)";;
 esac
