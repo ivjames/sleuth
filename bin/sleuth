@@ -27,7 +27,7 @@ cmd="${1:-help}"
 case "$cmd" in
   deploy)
     git pull --ff-only
-    npm ci --omit=dev 2>/dev/null || npm install --omit=dev || true
+    npm ci --omit=dev
     pm2 restart "$APP" --update-env || PORT="$PORT" pm2 start server.js --name "$APP"
     pm2 save
     echo "Deployed $APP on port $PORT."
