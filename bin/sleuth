@@ -9,7 +9,7 @@
 #   sleuth deploy    sync to origin/main -> npm ci -> pm2 start/restart -> probe -> save
 #   sleuth start     first registration under pm2 (what deploy does when nothing is registered)
 #   sleuth restart   pm2 restart + probe, no code change
-#   sleuth logs      tail the pm2 logs for this app
+#   sleuth logs [n]  tail the pm2 logs for this app (n lines, default 80)
 #   sleuth status    HEAD, pm2 state, local + public probe, cert days
 #   sleuth test      run the game's test suite (npm test)
 #
@@ -88,7 +88,7 @@ Usage:
   sleuth deploy            sync, npm ci --omit=dev, pm2 start/restart, probe, save
   sleuth start             first pm2 registration only (deploy does this too); refuses if registered
   sleuth restart           pm2 restart + probe
-  sleuth logs [-n N]       tail pm2 logs
+  sleuth logs [n]          tail pm2 logs (n lines, default 80; other pm2 logs flags pass through)
   sleuth status            HEAD + pm2 + local/public probe + cert
   sleuth test              npm test (solvability + Playwright smoke)
 
@@ -294,7 +294,18 @@ cmd_restart() {
   pm2_clean restart "$APP"
   probe || die "$APP is not answering on 127.0.0.1:$PORT after restart. See: sleuth logs"
 }
-cmd_logs()    { pm2_clean logs "$APP" "$@"; }
+cmd_logs() {
+  # `sleuth logs 80` (the old positional form) and `sleuth logs --lines 80`
+  # both work: a bare leading number becomes --lines, and the old default of
+  # 80 is added only when the caller gave no line count of their own.
+  local args=("$@") a has_lines=0
+  case "${1:-}" in ''|*[!0-9]*) ;; *) args=(--lines "$1" "${@:2}");; esac
+  for a in "${args[@]+"${args[@]}"}"; do
+    case "$a" in --lines|--lines=*|-n) has_lines=1;; esac
+  done
+  [ "$has_lines" -eq 1 ] || args=(--lines 80 "${args[@]+"${args[@]}"}")
+  pm2_clean logs "$APP" "${args[@]}"
+}
 cmd_test()    { [ $# -eq 0 ] || die "test takes no options (see --help)"; cd "$ROOT"; npm test; }
 
 cmd_status() {

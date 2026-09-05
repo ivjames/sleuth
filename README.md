@@ -157,7 +157,7 @@ Thereafter, once a change is merged to `main` (merging does not deploy):
 ```
 sleuth deploy          # git fetch + reset --hard origin/main, npm ci --omit=dev, pm2 restart, probe, save
 sleuth restart         # pm2 restart + probe
-sleuth logs [-n N]     # tail pm2 logs
+sleuth logs [n]        # tail pm2 logs (n lines, default 80; pm2 logs flags pass through)
 sleuth status          # HEAD, pm2 state, port, local + public probe, cert days
 sleuth test            # npm test
 ```
