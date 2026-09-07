@@ -169,6 +169,21 @@ on `127.0.0.1:<PORT>` afterwards; `pm2 save` also only runs when every
 registered pm2 process is online. Overrides: `SLEUTH_FQDN`, `SLEUTH_BRANCH`,
 `SLEUTH_PORT` (default: `.env` `PORT`, else 8065), `SLEUTH_PROBE_TRIES`.
 
+> **Keep `PORT` in `/var/www/sleuth/.env`.** The `8065` fallback above is
+> `server.js`'s own default, and **8065 is `gigit`'s registered port** on this
+> droplet — this site's is **8066** per lab980's `.claude/sites.json`. So if
+> `.env` is missing or unreadable, `sleuth deploy` hands pm2 port 8065:
+> `server.js` fails to bind it (gigit already has it) while the deploy's probe
+> of `127.0.0.1:8065` is answered **by gigit** and passes. The deploy then
+> reports success with sleuth dead — a check that succeeds in exactly the case
+> it exists to catch. `sleuth status` prints the port it resolved; read it, and
+> confirm `grep '^PORT=' /var/www/sleuth/.env` is there before deploying after
+> any `.env` change.
+>
+> Which port is actually live is not visible from outside (it is loopback-only),
+> so the 8066-vs-8065 question needs the droplet: `grep '^PORT=' /var/www/sleuth/.env`
+> and `grep proxy_pass /etc/nginx/sites-available/sleuth.lab980.com`.
+
 ## Credits
 
 Original **Sleuth** © 1983 Eric N. Miller / Norland Software. This is an
